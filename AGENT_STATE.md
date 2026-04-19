@@ -7,8 +7,8 @@
 - **Environment:** Pixi is set up in `max_env` with strict dependencies (`max`, `modular`, `jax`, `flax`, and `onnx`).
 - **Milestones Achieved:**
   - Renamed all platforms (GitHub, Hugging Face) to `ents`, absorbing `gemax`, `44`, `77`, `mlx`, and `arton`.
-  - Absorbed `arton`'s atomic tokenizer and data pipeline into `C02_The_Lexicon`.
-  - Absorbed `arton`'s production Gemma deployment into `C05_The_Entmoot`.
+  - Absorbed legacy atomic tokenizer and data pipelines into `C02_The_Lexicon`.
+  - Absorbed legacy production Gemma deployment into `C05_The_Entmoot`.
   - Implemented the C00 module (The Seed) complete with solutions and the Oracle of Fangorn grader (`grademe.sh`).
   - Solved C01 (The Enting) in JAX, MAX, and Mojo, updating the Oracle grader (`grademe.sh`).
   - Implemented strict security policies and sandboxing via `.gitignore` and `SECURITY.md`.

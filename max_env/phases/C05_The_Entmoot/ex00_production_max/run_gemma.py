@@ -5,7 +5,7 @@ import max
 
 def main():
     print("==================================================")
-    print("🚀 Arton Production Path: MAX Engine + Gemma")
+    print("🚀 Ents Production Path: MAX Engine + Gemma")
     print("==================================================")
     print("While 'atomic_gpt' shows you how the math works,")
     print("this path shows you how the Enterprise world runs it.")

@@ -9,7 +9,7 @@ fn main() raises:
     var file_path = "input.txt"
     var dataset_url = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
     
-    print("Checking if we have the book for Arton...")
+    print("Checking if we have the book for the Ents...")
     
     # Check if the file already exists
     if not os.path.exists(file_path):
@@ -25,4 +25,4 @@ fn main() raises:
     var text = f.read()
     f.close()
     
-    print("Arton's book has", len(text), "characters to read.")
+    print("The Ent's book has", len(text), "characters to read.")
