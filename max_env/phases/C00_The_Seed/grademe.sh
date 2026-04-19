@@ -26,7 +26,7 @@ fi
 
 # Grade ex02 (Mojo)
 echo -n "Grading ex02 (Mojo)... "
-output02=$(cd ex02_mojo_sprout && MAGIC_DIR=$PWD/../../../../.pixi/envs/default pixi run mojo sprout.mojo 2>/dev/null)
+output02=$(cd ex02_mojo_sprout && MAGIC_DIR=$PWD/../../../.pixi/envs/default pixi run mojo sprout.mojo 2>/dev/null)
 if [[ "$output02" == *"0.5, -0.2, 0.8, 0.1"* ]]; then
     echo "✅ PASS"
 else
