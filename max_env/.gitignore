@@ -2,5 +2,6 @@
 .pixi/*
 !.pixi/config.toml
 
-# Ignore downloaded models (they are fetched via scripts)
+# Ignored Models and Data
 models/
+*.onnx

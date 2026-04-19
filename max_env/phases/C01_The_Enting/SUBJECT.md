@@ -30,7 +30,7 @@ When an AI tries to guess the next word, it spits out raw, messy scores called "
     *   Row 1 (the logits for "hello") should be `[-1.0, -2.0, 5.0]`.
 *   Apply the softmax function to Row 1 to convert the logits into probabilities.
 *   Print the resulting probability array.
-*   Output format must exactly match: `[0.00242826 0.00089339 0.99667835]`
+*   Output format must exactly match: `[2.470376e-03 9.088005e-04 9.966208e-01]`
 
 ---
 
@@ -46,7 +46,7 @@ When an AI tries to guess the next word, it spits out raw, messy scores called "
 *   Construct an ONNX computational graph that performs a `Gather` (embedding lookup) followed by a `Softmax`.
 *   Pass the input token `[1]` through the graph.
 *   Output the probabilities from the MAX engine.
-*   Output format must exactly match: `[[0.00242826 0.00089339 0.99667835]]`
+*   Output format must exactly match: `[[2.470376e-03 9.088005e-04 9.966208e-01]]`
 
 ---
 
