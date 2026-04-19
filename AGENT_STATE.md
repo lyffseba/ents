@@ -17,7 +17,7 @@
 - **To sync to GitHub (`lyffseba/777`):** `git push origin main`
 
 ## 🚀 NEXT STEPS FOR THE AGENT
-1. **MLX Integration:** Expand the "Tri-Force" approach to include MLX (Apple Silicon optimization) as a core pillar of the 777 engine alongside JAX, MAX, and Mojo.
+1. **MLX Integration:** Expand the "Four Pillars" approach to fully scaffold MLX into C00 and C01.
 2. **Setup C02 (The Sapling):** Scaffold the next module (Self-Attention) following the Trial of Fangorn format.
 3. **Spin-off Planning:** Outline the architecture for the `777-cli` game or `777-pi-mod` in dedicated markdown files to prepare for separating the projects.
 
