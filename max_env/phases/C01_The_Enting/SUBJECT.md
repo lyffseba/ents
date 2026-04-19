@@ -10,12 +10,12 @@ When an AI tries to guess the next word, it spits out raw, messy scores called "
 ## General Rules
 *   Your exercises must be done in the exact directories specified.
 *   You must strictly name your files as requested.
-*   You must pass the Moulinette (`grademe.sh`). If it fails, your grade is 0.
+*   You must pass the Oracle of Fangorn (`grademe.sh`). If it fails, your grade is 0.
 
 ---
 
 ## Chapter I
-### Exercise 00: ft_jax_bigram
+### Exercise 00: lore_jax_bigram
 
 | Exercise 00 | |
 | :--- | :--- |
@@ -35,7 +35,7 @@ When an AI tries to guess the next word, it spits out raw, messy scores called "
 ---
 
 ## Chapter II
-### Exercise 01: ft_max_bigram
+### Exercise 01: lore_max_bigram
 
 | Exercise 01 | |
 | :--- | :--- |
@@ -51,7 +51,7 @@ When an AI tries to guess the next word, it spits out raw, messy scores called "
 ---
 
 ## Chapter III
-### Exercise 02: ft_mojo_bigram
+### Exercise 02: lore_mojo_bigram
 
 | Exercise 02 | |
 | :--- | :--- |

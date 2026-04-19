@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo "🌿 44 Grader (Moulinette) - Module 01: The Enting"
+echo "🌿 44 Grader (Oracle of Fangorn) - Module 01: The Enting"
 echo "--------------------------------------------------"
 
 echo -n "Grading ex00 (JAX)... "

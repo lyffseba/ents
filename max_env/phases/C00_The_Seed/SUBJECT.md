@@ -2,7 +2,7 @@
 
 *“You must understand the soil before you can grow the tree.”*
 
-Summary: This document is the first module of the 44 AI Piscine. You will discover the basic building blocks of AI inference: Tensors, Embeddings, and Graph Compilation.
+Summary: This document is the first module of the 44 AI Awakening. You will discover the basic building blocks of AI inference: Tensors, Embeddings, and Graph Compilation.
 
 **If you have never coded AI before:**
 Do not panic. A "Tensor" is just a grid of numbers (like an Excel spreadsheet). An "Embedding" is just a lookup table that turns a word (like "apple") into a row of numbers so the computer can do math on it. 
@@ -13,13 +13,13 @@ Your goal in this module is simple: find the row of numbers for Token ID `2`.
 *   Your exercises must be done in the exact directories specified.
 *   You must strictly name your files as requested.
 *   You are only allowed to use the functions explicitly listed in the "Allowed functions" section.
-*   You must pass the Moulinette (`grademe.sh`). If it fails, your grade is 0.
-*   If you have a question, read the manual. If you still have a question, ask your neighbor.
+*   You must pass the Oracle of Fangorn (`grademe.sh`). If it fails, your grade is 0.
+*   If you have a question, read the ancient scrolls. If you still have a question, ask a fellow traveler.
 
 ---
 
 ## Chapter I
-### Exercise 00: ft_soil
+### Exercise 00: lore_soil
 
 | Exercise 00 | |
 | :--- | :--- |
@@ -38,7 +38,7 @@ Your goal in this module is simple: find the row of numbers for Token ID `2`.
 ---
 
 ## Chapter II
-### Exercise 01: ft_roots
+### Exercise 01: lore_roots
 
 | Exercise 01 | |
 | :--- | :--- |
@@ -55,7 +55,7 @@ Your goal in this module is simple: find the row of numbers for Token ID `2`.
 ---
 
 ## Chapter III
-### Exercise 02: ft_sprout
+### Exercise 02: lore_sprout
 
 | Exercise 02 | |
 | :--- | :--- |

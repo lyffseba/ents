@@ -1,4 +1,4 @@
-# 🌳 44: The AI Piscine
+# 🌳 44: The Awakening
 
 Welcome, traveler. 
 
@@ -29,7 +29,7 @@ This repository is designed to be completely offline-capable. If you are about t
 ---
 
 ## 📖 How to Read This Book (The Pedagogy)
-This is not a standard tutorial. This is a **Piscine** (inspired by School 42). 
+This is not a standard tutorial. This is a **Trial of Fangorn** (an interactive, constraint-based learning journey). 
 There is no hand-holding. You will be given a specific mathematical goal, strict constraints, and allowed functions.
 
 To truly understand how AI works, you must master the **"Tri-Force"**:
@@ -37,7 +37,7 @@ To truly understand how AI works, you must master the **"Tri-Force"**:
 2. 🕸️ **MAX (The Graph):** You will compile that math into a computational graph (ONNX) and run it through Modular's high-speed AI engine.
 3. 🦀 **Mojo (The Bare Metal):** Finally, you will rewrite the operation in bare-metal Mojo, directly manipulating memory and pointers to achieve C-level speed.
 
-For every module, you must write code for all three paradigms. You cannot progress until the automated grader (the `Moulinette`) gives you a green `✅ PASS`.
+For every module, you must write code for all three paradigms. You cannot progress until the automated grader (the `Oracle of Fangorn`) gives you a green `✅ PASS`.
 
 ---
 

@@ -1,4 +1,4 @@
-# 🌳 ENTS Architecture (The "Tri-Force" Approach)
+# 🌳 44 Architecture (The "Tri-Force" Approach)
 
 To build a truly innovative from-scratch inference engine (inspired by Karpathy's `llm.c` and `nanoGPT`), we are utilizing a hybrid approach combining the elegance of mathematical research with bare-metal performance. 
 
@@ -16,11 +16,15 @@ This repository is designed as an **End-to-End Educational Journey** for AI engi
    - This is where the magic happens. We will write our custom tensors, memory management, and attention kernels in raw Mojo. This gives us C/Rust-level performance with Pythonic syntax.
 
 ## The Evolutionary Roadmap (Growing the Forest)
-To deeply understand the architecture, we will build from the simplest concepts up to the Ents engine, implementing each phase across our "Tri-Force" stack (JAX -> MAX -> Mojo):
+To deeply understand the architecture, we will build from the simplest concepts up to the 44 engine, implementing each phase across our "Tri-Force" stack (JAX -> MAX -> Mojo). **Each phase is designed as a self-guided, test-driven programming challenge (inspired by the trials of Fangorn Forest).**
 
-1. **Phase 1: The Bigram Model (The Enting / Seed) 🌱**
-   - A tiny statistical language model. Just looking at the previous token to predict the next. No attention, just embedding lookups.
-2. **Phase 2: GPT-1 (The Sapling / Quickbeam) 🌿**
+1. **Phase 00: The Seed (Embedding Layer) 🌱**
+   - *Challenge:* Given a token ID, retrieve its mathematical vector. 
+   - *Goal:* Master JAX arrays, ONNX/MAX graph compilation, and bare-metal Mojo memory access.
+2. **Phase 01: The Enting (Bigram Model) 🌿**
+   - *Challenge:* Convert raw logits into probabilities using Softmax.
+   - *Goal:* Predict the next token based only on the current token.
+3. **Phase 02: GPT-1 (The Sapling / Quickbeam) 🌲**
    - The original OpenAI GPT (117M parameters). Introduces the core Self-Attention mechanism and positional embeddings. "Don't be hasty," but it's faster than what came before!
 3. **Phase 3: GPT-2 (The Young Ent / Treebeard's Awakening) 🌲**
    - The 124M parameter model. We move LayerNorms to the input of each sub-block (pre-norm architecture) and expand the context window. It begins to speak with coherence.
