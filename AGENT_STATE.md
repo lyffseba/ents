@@ -1,5 +1,5 @@
-# 🤖 77 - Continuous Development State
-> *This file is used to hand off context and next steps between AI coding sessions.*
+# 🤖 77 - The Memory Crystal (Continuous Development State)
+> *This file is the literal "brain" and memory state between AI coding sessions across different machines or agents.*
 
 ## Current Status (2026-04-18)
 - **Project Goal:** Building a highly secure, standalone educational AI inference engine (`77`) merging MLX, MAX, JAX, and Mojo, focusing on the evolutionary history of LLMs (from Bigram up to Gemma 4), themed around the **Ents of Middle-earth** 🌳.
@@ -18,10 +18,10 @@
 - **To sync to Hugging Face (`lyffseba/77`):** `git push hf main`
 - **To sync to GitHub (`lyffseba/77`):** `git push origin main`
 
-## 🚀 NEXT STEPS FOR THE AGENT
+## 🚀 NEXT STEPS FOR THE ACTIVE AGENT
 1. **MLX Integration:** Expand the "Four Pillars" approach to fully scaffold MLX into C00 and C01.
 2. **Setup C02 (The Sapling):** Scaffold the next module (Self-Attention) following the Trial of Fangorn format.
 3. **Spin-off Planning:** Outline the architecture for the `77-cli` game or `77-pi-mod` in dedicated markdown files to prepare for separating the projects.
 
 ---
-*Agent Instructions:* When starting a new session, read this file to understand where the project left off. When completing a task, update the "Current Status" and "Next Steps" sections accordingly.
+*Agent Instructions:* When starting a new session on any machine, read this file FIRST to instantly understand where the project left off and regain full context. When completing a task, you MUST update the "Current Status" and "Next Steps" sections accordingly before terminating your session or handing off to another agent.
