@@ -10,7 +10,7 @@
   - Absorbed `arton`'s atomic tokenizer and data pipeline into `C02_The_Lexicon`.
   - Absorbed `arton`'s production Gemma deployment into `C05_The_Entmoot`.
   - Implemented the C00 module (The Seed) complete with solutions and the Oracle of Fangorn grader (`grademe.sh`).
-  - Scaffolded the C01 module (The Enting / Bigram Softmax).
+  - Solved C01 (The Enting) in JAX, MAX, and Mojo, updating the Oracle grader (`grademe.sh`).
   - Implemented strict security policies and sandboxing via `.gitignore` and `SECURITY.md`.
 
 ## Repository Sync Note
