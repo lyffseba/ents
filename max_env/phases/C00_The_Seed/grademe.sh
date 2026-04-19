@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo "🌿 ENTS Grader (Moulinette) - Phase 00: The Seed"
+echo "🌿 44 Grader (Moulinette) - Module 00: The Seed"
 echo "--------------------------------------------------"
 
 # Grade ex00 (JAX)

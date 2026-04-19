@@ -5,7 +5,7 @@ Here we build the inference engine from the ground up using Modular's MAX and Mo
 
 def main():
     print("=========================================")
-    print("🌳 ENTS - High Performance Mojo Engine 🚀")
+    print("🌳 44 - High Performance Mojo Engine 🚀")
     print("=========================================")
     print("[Mojo] System initialized successfully.")
     print("[Mojo] The Ents are waking up... ready to implement the Transformer blocks.")
