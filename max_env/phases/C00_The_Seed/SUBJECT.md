@@ -2,7 +2,7 @@
 
 *“You must understand the soil before you can grow the tree.”*
 
-Summary: This document is the first module of the 77 AI Awakening. You will discover the basic building blocks of AI inference: Tensors, Embeddings, and Graph Compilation.
+Summary: This document is the first module of the Ents AI Awakening. You will discover the basic building blocks of AI inference: Tensors, Embeddings, and Graph Compilation.
 
 **If you have never coded AI before:**
 Do not panic. A "Tensor" is just a grid of numbers (like an Excel spreadsheet). An "Embedding" is just a lookup table that turns a word (like "apple") into a row of numbers so the computer can do math on it. 

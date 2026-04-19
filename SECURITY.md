@@ -15,5 +15,5 @@ To ensure this repository remains perfectly secure and with no vulnerabilities:
 3. **Bare Metal Execution:** Mojo code interacts directly with memory. The `grademe.sh` Oracle is designed to test modules without running `eval()` or injecting unchecked variables.
 
 ## Reporting a Vulnerability
-If you discover a security vulnerability within `77`, please do NOT open a public issue.
-Instead, send a direct message or open a private advisory via GitHub under the `lyffseba/77` repository. We aim to address critical execution or dependency vulnerabilities within 48 hours.
+If you discover a security vulnerability within `ents`, please do NOT open a public issue.
+Instead, send a direct message or open a private advisory via GitHub under the `lyffseba/ents` repository. We aim to address critical execution or dependency vulnerabilities within 48 hours.

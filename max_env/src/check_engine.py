@@ -2,7 +2,7 @@ from max import engine
 from max import driver
 
 def main():
-    print("Welcome to the 77 inference engine.")
+    print("Welcome to the Ents inference engine.")
     print("Initializing MAX Inference Session...")
     
     # We must pass actual device objects to the session.

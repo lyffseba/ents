@@ -22,7 +22,7 @@ def create_onnx():
     
     node = helper.make_node('Gather', inputs=['embedding_weights', 'input'], outputs=['output'], axis=0)
     graph = helper.make_graph(nodes=[node], name='EmbeddingGraph', inputs=[X], outputs=[Y], initializer=[weight_init])
-    model = helper.make_model(graph, producer_name='77_oracle')
+    model = helper.make_model(graph, producer_name='ents_oracle')
     
     onnx.save(model, 'soil.onnx')
 

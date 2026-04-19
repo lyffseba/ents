@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo "🌿 77 Grader (Oracle of Fangorn) - Module 00: The Seed"
+echo "🌿 Ents Grader (Oracle of Fangorn) - Module 00: The Seed"
 echo "--------------------------------------------------"
 
 # Grade ex00 (JAX)

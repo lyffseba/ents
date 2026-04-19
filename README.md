@@ -1,8 +1,8 @@
-# 🌳 77: The Awakening
+# 🌳 Ents: The Awakening
 
 Welcome, traveler. 
 
-If you are reading this, you have decided to look behind the curtain of modern Artificial Intelligence. **77** is the master repository—a standalone, ultra-secure, from-scratch educational framework that merges the wisdom of MLX, MAX, JAX, and bare-metal Mojo. It is designed to take you from absolute zero to mastering the bare-metal architecture of modern language models (like GPT, LLaMA, and Gemma).
+If you are reading this, you have decided to look behind the curtain of modern Artificial Intelligence. **Ents** is the master repository—a standalone, ultra-secure, from-scratch educational framework that merges the wisdom of MLX, MAX, JAX, and bare-metal Mojo. It is designed to take you from absolute zero to mastering the bare-metal architecture of modern language models (like GPT, LLaMA, and Gemma).
 
 We are going to wake up the ancient language models one by one, like the Ents of Middle-earth, mastering their secrets from the ground up.
 
@@ -61,9 +61,9 @@ cd max_env/phases/C00_The_Seed
 
 ---
 
-## The 77 Universe
-This repository (`77`) is the **Master Core Educational Engine**. In the future, this universe will expand into:
-1. **`77-cli`:** A standalone terminal RPG game where you play through the modules to "wake the Ents".
-2. **`77-pi-mod`:** A standalone extension for Pi (the coding agent) to interact with these models locally.
+## The Ents Universe
+This repository (`ents`) is the **Master Core Educational Engine**. In the future, this universe will expand into:
+1. **`ents-cli`:** A standalone terminal RPG game where you play through the modules to "wake the Ents".
+2. **`ents-pi-mod`:** A standalone extension for Pi (the coding agent) to interact with these models locally.
 
 Good luck. The forest awaits.

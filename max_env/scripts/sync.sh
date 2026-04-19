@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Syncs the current workspace to both GitHub and Hugging Face
 
-echo "🚀 Synchronizing 77 to GitHub and Hugging Face..."
+echo "🚀 Synchronizing Ents to GitHub and Hugging Face..."
 
 # Ensure we are tracking all new files
 git add .

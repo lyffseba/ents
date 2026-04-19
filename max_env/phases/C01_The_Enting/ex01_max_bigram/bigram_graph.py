@@ -10,7 +10,7 @@ def create_onnx():
     # Softmax node
     node = helper.make_node('Softmax', inputs=['input'], outputs=['output'], axis=0)
     graph = helper.make_graph(nodes=[node], name='SoftmaxGraph', inputs=[X], outputs=[Y])
-    model = helper.make_model(graph, producer_name='77_oracle')
+    model = helper.make_model(graph, producer_name='ents_oracle')
     
     onnx.save(model, 'bigram.onnx')
 
