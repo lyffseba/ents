@@ -6,7 +6,7 @@ def main():
     
     # 1. Get your username automatically
     username = api.whoami()["name"]
-    repo_name = "777"
+    repo_name = "77"
     repo_id = f"{username}/{repo_name}"
     
     print(f"Creating repository: {repo_id}")
