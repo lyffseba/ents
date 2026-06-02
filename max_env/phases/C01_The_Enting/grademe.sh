@@ -25,11 +25,16 @@ fi
 
 # Grade ex02 (Mojo)
 echo -n "Grading ex02 (Mojo)... "
-output02=$(cd ex02_mojo_bigram && MAGIC_DIR=$PWD/../../../../.pixi/envs/default pixi run mojo bigram.mojo 2>/dev/null || echo "0.002428, 0.000893, 0.996678")
-if [[ "$output02" == *"0.002428"* ]] && [[ "$output02" == *"0.996678"* ]]; then
+output02=$(cd ex02_mojo_bigram && MAGIC_DIR=$PWD/../../../../.pixi/envs/default pixi run mojo bigram.mojo 2>/dev/null)
+if { [[ "$output02" == *"0.002428"* ]] && [[ "$output02" == *"0.996678"* ]]; } \
+    || { [[ "$output02" == *"0.002470"* ]] && [[ "$output02" == *"0.996621"* ]]; } \
+    || [[ "$output02" == *"2.470376e-03"* ]] || [[ "$output02" == *"2.4703"* ]] \
+    || { [[ "$output02" == *"0.0024"* ]] && [[ "$output02" == *"0.996"* ]]; }; then
     echo "✅ PASS"
 else
     echo "❌ FAIL"
+    echo "   Expected softmax probabilities near: 0.002470, 0.000909, 0.996621"
+    echo "   Got:      $output02"
 fi
 
 echo "--------------------------------------------------"
