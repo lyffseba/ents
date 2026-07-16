@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{{ app_name or 'Ents Academy' }} | Wake the Ents</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #0a0f0a; color: #e0f0e0; }
+    .forest { background: linear-gradient(180deg, #0a0f0a 0%, #112211 100%); }
+    .ent-green { color: #4ade80; }
+    .oracle { font-family: ui-monospace, monospace; }
+  </style>
+</head>
+<body class="forest min-h-screen">
+  <nav class="border-b border-green-900 px-6 py-3 flex items-center justify-between">
+    <a href="/" class="text-2xl font-bold ent-green">🌳 Ents Academy</a>
+    <div class="flex gap-4 text-sm">
+      <a href="/dashboard" class="hover:text-green-400">Forest</a>
+      <a href="/tutor" class="hover:text-green-400">AI Tutor</a>
+      <a href="/ops" class="hover:text-green-400">The Entmoot (Ops)</a>
+      <a href="/judges" class="hover:text-green-400 font-bold">For Judges</a>
+      <a href="/pricing" class="hover:text-green-400">Pricing</a>
+      <a href="https://xprize.devpost.com/" target="_blank" class="text-xs px-2 py-1 border border-green-700 rounded">XPRIZE</a>
+    </div>
+  </nav>
+  <main class="max-w-6xl mx-auto p-6">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="text-center text-xs text-green-700 py-8">Built for the Build with Gemini XPRIZE • AI-Native Education • Google Cloud + Gemini</footer>
+</body>
+</html>

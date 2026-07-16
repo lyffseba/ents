@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-3xl">🌿 Treebeard's AI Tutor (Gemini)</h1>
+<p class="text-green-300">Ask anything about the Trials. Every question triggers a real Gemini call — logged for the XPRIZE judges as live AI in production.</p>
+
+<form id="tutor-form" class="mt-6 flex gap-2">
+  <input name="question" class="flex-1 bg-black border border-green-800 p-3 rounded" placeholder="Why does softmax turn logits into probabilities that sum to 1?"/>
+  <button class="px-6 bg-green-600 rounded">Ask</button>
+</form>
+
+<div id="answer" class="mt-4 p-4 bg-black/50 border border-green-900 min-h-[120px] oracle text-sm whitespace-pre-wrap"></div>
+
+<script>
+const form = document.getElementById('tutor-form');
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const q = form.question.value;
+  const res = await fetch('/tutor/ask', {method:'POST', body: new URLSearchParams({question: q})});
+  const data = await res.json();
+  document.getElementById('answer').textContent = data.answer;
+});
+</script>
+{% endblock %}

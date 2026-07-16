@@ -9,3 +9,7 @@ max_env/.pixi/
 # Mojo/Python
 __pycache__/
 *.pyc
+
+.env
+web/.env
+xprize_evidence/

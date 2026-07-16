@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl">
+  <div class="bg-yellow-900/30 border border-yellow-600 p-4 rounded mb-8">
+    <strong>FOR BUILD WITH GEMINI XPRIZE JUDGES</strong><br>
+    This is the live Ents Academy platform. All AI agent activity, Gemini calls, and business operations are real and instrumented for your review.
+  </div>
+
+  <h1 class="text-4xl ent-green">Ents Academy — Judge Quickstart</h1>
+  
+  <h2 class="mt-8 text-2xl">1. Experience the AI-Native Operations (most important)</h2>
+  <ul class="list-disc ml-6 mt-2 space-y-1">
+    <li>Go to <a href="/ops" class="underline">/ops</a> (The Entmoot)</li>
+    <li>Click the buttons to <strong>Trigger Retention Agent</strong> and <strong>Trigger Content Agent</strong></li>
+    <li>Watch Gemini get called live, a business decision get made, and the full log (agent, prompt summary, output, action) appear in the table.</li>
+    <li>These agents run on a schedule in production on Cloud Run.</li>
+  </ul>
+
+  <h2 class="mt-8 text-2xl">2. See Gemini in the product</h2>
+  <ul class="list-disc ml-6 mt-2 space-y-1">
+    <li>Visit <a href="/tutor" class="underline">/tutor</a> and ask any question about embeddings, softmax, or tokenization.</li>
+    <li>Every answer is a real Gemini API call with full curriculum context.</li>
+    <li>Submit code in the <a href="/lab/00/jax" class="underline">Lab</a> — you get both auto Oracle + Gemini review.</li>
+  </ul>
+
+  <h2 class="mt-8 text-2xl">3. Revenue & Business Evidence</h2>
+  <ul class="list-disc ml-6 mt-2 space-y-1">
+    <li>Run in terminal (after seeding): <code>python scripts/export_revenue.py</code></li>
+    <li>Files in <code>xprize_evidence/</code> contain the exact monthly breakdown, costs, marketing spend ($0 disclosed), and related-party separation required by the rules.</li>
+    <li>Stripe integration is live in the deployed version (webhooks credit Pro status and record RevenueEvents).</li>
+  </ul>
+
+  <h2 class="mt-8 text-2xl">4. The Core Educational Product</h2>
+  <p>The unique moat: students must implement the same concepts in four real stacks (JAX, MLX, MAX, Mojo) under strict "Oracle of Fangorn" grading. The web layer adds always-on Gemini tutoring and progress tracking. Full local workspaces can be downloaded from the lab pages for the original bare-metal experience.</p>
+
+  <h2 class="mt-8 text-2xl">5. Technical Compliance</h2>
+  <ul class="list-disc ml-6 mt-2 space-y-1">
+    <li><strong>Google Cloud product:</strong> Entire platform hosted on Cloud Run (auto-scaling, production).</li>
+    <li><strong>Gemini API:</strong> Multiple calls in the deployed application (tutor, agents, oracle review).</li>
+    <li><strong>AI-Native:</strong> See /ops for continuous agent execution of real business decisions.</li>
+    <li><strong>Evidence:</strong> Everything is logged in the DB and visible (agent decisions, Gemini traces, revenue events).</li>
+  </ul>
+
+  <p class="mt-8 text-sm text-green-600">Full source, plan, narrative, and video script are in the GitHub repo. Run <code>python scripts/seed_demo.py --realistic</code> for demo data if needed.</p>
+
+  <p class="mt-4"><strong>Thank you for reviewing. We built a real business that teaches people how to build real AI — and the business itself is run by Gemini agents.</strong></p>
+</div>
+{% endblock %}

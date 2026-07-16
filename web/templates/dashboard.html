@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-3xl ent-green mb-2">🌲 Your Fangorn Grove</h1>
+<p class="text-green-400">Welcome back, {{ user.email }}. {% if user.is_pro %}PRO MEMBER — unlimited Gemini.{% else %}Free tier. <a href="/pricing" class="underline">Upgrade to wake more Ents.</a>{% endif %}</p>
+
+<div class="mt-8">
+  <h2 class="font-semibold mb-3">Current Progress (The Trial)</h2>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {% for p in phases %}
+    <div class="border border-green-800 p-4 rounded bg-black/30">
+      <div class="flex justify-between"><span>Level {{ p }}</span> <span class="text-xs px-2 py-0.5 bg-green-900 rounded">{% if p in user.progress %}IN PROGRESS{% else %}LOCKED{% endif %}</span></div>
+      <div class="mt-3 text-sm">
+        {% for pil in ["jax","mlx","max","mojo"] %}
+          <span class="inline-block mr-2 {% if pil in (user.progress.get(p, [])) %}text-green-400{% else %}text-green-800{% endif %}">● {{ pil.upper() }}</span>
+        {% endfor %}
+      </div>
+      <a href="/lab/{{ p }}/jax" class="mt-3 inline-block text-xs underline">Enter the Lab →</a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="mt-10">
+  <a href="/tutor" class="px-4 py-2 bg-green-700 rounded">💬 Ask the AI Tutor (Gemini)</a>
+  <a href="/ops" class="ml-3 text-sm underline">View The Entmoot (live AI decisions)</a>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="text-center py-16">
+  <h1 class="text-6xl font-bold ent-green mb-4">Wake the Ents.<br>Master the Forest.</h1>
+  <p class="max-w-xl mx-auto text-xl text-green-200">The AI-native school for building real language models from bare metal. Four Pillars. Zero hand-holding. Powered by Gemini agents that also run the entire academy.</p>
+  
+  <div class="mt-10 flex justify-center gap-4">
+    <a href="/dashboard" class="px-8 py-3 bg-green-600 hover:bg-green-500 rounded text-lg">Enter Fangorn →</a>
+    <a href="/pricing" class="px-8 py-3 border border-green-700 hover:bg-green-900 rounded text-lg">See Pro ($29/mo)</a>
+  </div>
+  <p class="mt-4 text-xs text-green-600">Part of the $2M Build with Gemini XPRIZE • Education & Human Potential</p>
+</div>
+
+<div class="grid md:grid-cols-3 gap-6 mt-12">
+  <div class="bg-black/40 border border-green-900 p-6 rounded">
+    <div class="text-green-400 text-sm">PHASE 00</div>
+    <h3 class="text-xl mt-1">The Seed (Embeddings)</h3>
+    <p class="text-green-300 mt-2">JAX • MLX • MAX • Mojo. Understand tensors before you grow the tree.</p>
+  </div>
+  <div class="bg-black/40 border border-green-900 p-6 rounded">
+    <div class="text-green-400 text-sm">PHASE 01</div>
+    <h3 class="text-xl mt-1">The Enting (Bigram + Softmax)</h3>
+    <p class="text-green-300 mt-2">Turn raw logits into probabilities. The first time the model speaks.</p>
+  </div>
+  <div class="bg-black/40 border border-green-900 p-6 rounded">
+    <div class="text-green-400 text-sm">PHASE 02</div>
+    <h3 class="text-xl mt-1">The Lexicon (Tokenizer)</h3>
+    <p class="text-green-300 mt-2">"Fangorn" → [18,39,52...]. Learn the ancient tongue from scratch.</p>
+  </div>
+</div>
+
+<p class="mt-12 text-center text-sm text-green-700">AI Tutor (Gemini) + Oracle grading • Download full local workspace for airplane-mode deep work • Real agents run support, content & retention 24/7</p>
+{% endblock %}

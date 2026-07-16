@@ -1,5 +1,28 @@
 # 🌳 Ents: The Awakening
 
+> **🚀 OFFICIAL SUBMISSION — Build with Gemini XPRIZE**
+>
+> **Project:** Ents Academy (Ents: The Awakening — AI-Native Education Platform)
+> **Category:** Education & Human Potential
+> **Repo:** https://github.com/lyffseba/ents (or this local clone)
+> **Demo (when deployed):** [INSERT CLOUD RUN URL]
+> **Video:** [INSERT YOUTUBE/VIMEO <3min LINK — see VIDEO_SCRIPT.md]
+>
+> **For Judges (quick start):**
+> 1. **See the live AI-native business in action:** Deployed version runs Gemini agents continuously. Local: follow "XPRIZE Contest Build" section below.
+> 2. Go to `/ops` (or deployed equivalent) → click "trigger-retention" or "trigger-content". Watch Gemini make a real decision and log it (this is "AI executes key business decisions").
+> 3. Go to `/tutor` and ask a question — every response is a Gemini API call in production.
+> 4. Evidence package: `xprize_evidence/`, `SUBMISSION.md`, `scripts/export_revenue.py`, agent logs in DB + /ops.
+> 5. Full curriculum + Oracle: the `max_env/phases/` + `grademe.sh` (graders still pass).
+>
+> **Repo sharing for judging:** If private, add collaborators: `testing@devpost.com` and `judging@hacker.fund`.
+>
+> **One-line description:** The AI-native school where Gemini agents run the entire business (tutoring, retention, content creation) while teaching students to build real LLMs from scratch across JAX/MLX/MAX/Mojo.
+>
+> See `SUBMISSION.md` for the full narrative, checklist, and evidence. We are using Google Cloud Run (hosting + scaling) + Gemini API (multiple calls in deployed paths) as required.
+
+**This is the live project built to win the Build with Gemini XPRIZE.**
+
 Welcome, traveler. 
 
 If you are reading this, you have decided to look behind the curtain of modern Artificial Intelligence. **Ents** is the master repository—a standalone, ultra-secure, from-scratch educational framework that merges the wisdom of MLX, MAX, JAX, and bare-metal Mojo. It is designed to take you from absolute zero to mastering the bare-metal architecture of modern language models (like GPT, LLaMA, and Gemma).

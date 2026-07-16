@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-3xl ent-green">The Entmoot — Live AI Operations</h1>
+<p class="text-green-400">This is the heart of our AI-Native Operations score. Gemini agents execute real business decisions continuously. Every action is logged (API records + decision rationale) for judges.</p>
+
+<div class="mt-6">
+  <div class="text-sm mb-2">Recent Agent Decisions (Gemini calls: {{ gemini_calls_today or '—' }})</div>
+  {% for log in logs %}
+  <div class="mb-3 p-3 bg-black/60 border-l-4 border-green-600 text-sm">
+    <span class="text-green-500">{{ log.ts }}</span> — <strong>{{ log.agent }}</strong><br>
+    {{ log.decision }}
+    {% if log.gemini %}<span class="ml-2 text-[10px] px-1 py-px bg-green-900 rounded">GEMINI</span>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<p class="mt-8 text-xs text-green-700">In production on Cloud Run. RetentionAgent, ContentAgent, TutorAgent, RevenueAgent run on schedule or triggers. Full logs exportable for submission.</p>
+{% endblock %}

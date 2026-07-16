@@ -126,3 +126,15 @@ cd max_env && ./scripts/sync.sh "your message"
 - [ ] `cd max_env && pixi install` (Apple Silicon only)
 - [ ] Run `./grademe.sh` in C00 and C01 before claiming Mojo changes pass
 - [ ] Push to both `github` and `hf` after substantive commits
+
+---
+
+## XPRIZE layer (rebased onto origin/main 2026-07-16)
+
+- **Product surface:** `web/` FastAPI + HTMX (landing, dashboard, lab, tutor, ops, pricing, judges)
+- **Agents:** retention, content, scheduler under `web/agents/` with Gemini call logging
+- **Evidence:** `scripts/export_revenue.py`, `scripts/seed_demo.py`, `SUBMISSION.md`, `VIDEO_SCRIPT.md`, `devpost_submission_text.txt`
+- **CLI:** `ents-cli/game.py` TUI RPG; `ents-pi-mod/` pi extension
+- **Env template:** `.env.example`
+- **Next:** live GEMINI_API_KEY, Stripe, Cloud Run deploy, real users/revenue, record 3min video
+
