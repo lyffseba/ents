@@ -23,7 +23,7 @@ import shutil
 import tempfile
 from pathlib import Path as PyPath
 
-from .config import APP_NAME, DEBUG, PRO_MONTHLY_PRICE, FREE_TIER_PHASES
+from .config import APP_NAME, DEBUG, PRO_MONTHLY_PRICE, FREE_TIER_PHASES, get_gemini_key, USE_VERTEX
 from .deps import get_db, call_gemini, get_stripe, Base, engine
 from . import models
 from .oracle import grade_submission
@@ -130,7 +130,11 @@ async def trigger_content():
 async def download_workspace(phase: str):
     """Download clean student workspace for local Oracle (grademe.sh + pixi). This + web tutor = hybrid strength."""
     base = PyPath(__file__).parent.parent / "max_env" / "phases"
-    phase_map = {"00": "00_The_Seed", "01": "01_The_Enting", "02": "02_The_Lexicon"}
+    phase_map = {
+        "00": "C00_The_Seed" if (base / "C00_The_Seed").exists() else "00_The_Seed",
+        "01": "C01_The_Enting" if (base / "C01_The_Enting").exists() else "01_The_Enting",
+        "02": "C02_The_Lexicon" if (base / "C02_The_Lexicon").exists() else "02_The_Lexicon",
+    }
     pdir = base / phase_map.get(phase, "00_The_Seed")
     if not pdir.exists():
         raise HTTPException(404, "Phase not ready")
@@ -163,8 +167,13 @@ async def stripe_webhook(request: Request):
 
 # Health for Cloud Run
 @app.get("/healthz")
+@app.get("/health")
 async def health():
-    return {"status": "ok", "service": APP_NAME, "gemini_configured": bool(get_gemini_key() or USE_VERTEX)}
+    return {
+        "status": "ok",
+        "service": APP_NAME,
+        "gemini_configured": bool(get_gemini_key() or USE_VERTEX),
+    }
 
 @app.get("/judges", response_class=HTMLResponse)
 async def judges_page(request: Request):

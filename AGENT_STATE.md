@@ -138,3 +138,7 @@ cd max_env && ./scripts/sync.sh "your message"
 - **Env template:** `.env.example`
 - **Next:** live GEMINI_API_KEY, Stripe, Cloud Run deploy, real users/revenue, record 3min video
 
+## Polish (2026-07-16)
+- Fixed `web/app.py` config imports (`get_gemini_key`, `USE_VERTEX`).
+- Phase download maps to `C00`/`C01`/`C02` dirs when present.
+- `/health` + `/healthz`; static `.gitkeep`; local contest build docs in README.
