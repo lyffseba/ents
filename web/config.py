@@ -21,7 +21,7 @@ DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR / 'ents_academy.d
 # Gemini (MANDATORY: at least one call in deployed app per rules. Use Vertex or generativeai)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 USE_VERTEX = os.getenv("USE_VERTEX", "false").lower() == "true"  # Set true for full Google Cloud Vertex AI
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash-latest")  # Or gemini-2.0-flash etc. Update per google-genai availability.
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")  # Or gemini-2.0-flash etc. Update per google-genai availability.
 
 # Stripe (for real revenue evidence: total, by month, costs, mktg spend)
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "sk_test_...")  # Use live for real revenue

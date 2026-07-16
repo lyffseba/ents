@@ -56,8 +56,7 @@ DEMO_USER = {"id": 1, "email": "explorer@fangorn.dev", "is_pro": False, "progres
 @app.get("/", response_class=HTMLResponse)
 async def landing(request: Request):
     gemini_ready = bool(get_gemini_key() or USE_VERTEX)
-    return templates.TemplateResponse("landing.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "landing.html", {
         "app_name": APP_NAME,
         "pro_price": PRO_MONTHLY_PRICE,
         "gemini_ready": gemini_ready,
@@ -67,8 +66,7 @@ async def landing(request: Request):
 async def dashboard(request: Request, db=Depends(get_db)):
     # TODO: real user from session
     user = DEMO_USER
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "dashboard.html", {
         "user": user,
         "phases": ["00", "01", "02"],
     })
@@ -77,8 +75,7 @@ async def dashboard(request: Request, db=Depends(get_db)):
 async def lab(phase: str, pillar: str, request: Request):
     # Stub: later load real SUBJECT + template code from curriculum/
     lore = f"Level {phase} - {pillar.upper()} Pillar. Edit, summon the (AI) Oracle."
-    return templates.TemplateResponse("lab.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "lab.html", {
         "phase": phase,
         "pillar": pillar,
         "lore": lore,
@@ -93,7 +90,7 @@ async def submit_code(phase: str, pillar: str, code: str = Form(...)):
 
 @app.get("/tutor", response_class=HTMLResponse)
 async def tutor_page(request: Request):
-    return templates.TemplateResponse("tutor.html", {"request": request})
+    return templates.TemplateResponse(request, "tutor.html", {})
 
 @app.post("/tutor/ask")
 async def tutor_ask(question: str = Form(...)):
@@ -112,7 +109,7 @@ async def ops_dashboard(request: Request, db=Depends(get_db)):
     logs = [{"ts": str(d.ts), "agent": d.agent_name, "decision": d.decision, "gemini": True} for d in decisions]
     if not logs:
         logs = [{"ts": "demo", "agent": "RetentionAgent (demo)", "decision": "Run /ops/trigger-retention to execute live Gemini agent now.", "gemini": True}]
-    return templates.TemplateResponse("ops.html", {"request": request, "logs": logs, "gemini_calls_today": len(logs)})
+    return templates.TemplateResponse(request, "ops.html", { "logs": logs, "gemini_calls_today": len(logs)})
 
 @app.post("/ops/trigger-retention")
 async def trigger_retention():
@@ -148,7 +145,7 @@ async def download_workspace(phase: str):
 
 @app.get("/pricing", response_class=HTMLResponse)
 async def pricing(request: Request):
-    return templates.TemplateResponse("pricing.html", {"request": request, "price": PRO_MONTHLY_PRICE})
+    return templates.TemplateResponse(request, "pricing.html", { "price": PRO_MONTHLY_PRICE})
 
 # --- Stripe (revenue evidence) ---
 @app.post("/stripe/checkout")
@@ -178,8 +175,7 @@ async def health():
 @app.get("/judges", response_class=HTMLResponse)
 async def judges_page(request: Request):
     """Dedicated page for XPRIZE judges and reviewers."""
-    return templates.TemplateResponse("judges.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "judges.html", {
         "app_name": APP_NAME,
     })
 

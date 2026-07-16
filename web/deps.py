@@ -37,40 +37,47 @@ def get_stripe():
 _gemini_model = None
 
 def get_gemini_model():
+    """Return configured model or None when no credentials (demo mode)."""
     global _gemini_model
     if _gemini_model is not None:
         return _gemini_model
 
     api_key = get_gemini_key()
     if USE_VERTEX:
-        # Vertex AI path (stronger "Google Cloud product" signal)
         try:
             from vertexai.generative_models import GenerativeModel
-            # Assumes ADC or GOOGLE_APPLICATION_CREDENTIALS in Cloud Run
-            _gemini_model = GenerativeModel(getattr(__import__('web.config', fromlist=['GEMINI_MODEL']), 'GEMINI_MODEL', 'gemini-1.5-flash'))
+            from .config import GEMINI_MODEL
+            _gemini_model = GenerativeModel(GEMINI_MODEL)
             print("✅ Gemini via Vertex AI (Google Cloud)")
             return _gemini_model
         except Exception as e:
             print(f"Vertex init failed ({e}), falling back to google-generativeai")
-    
-    # google-generativeai (Gemini API - satisfies "use the Gemini API" rule)
+
+    if not api_key:
+        print("⚠️ GEMINI_API_KEY unset — demo mode (deterministic mock responses).")
+        return None
+
     import google.generativeai as genai
+    from .config import GEMINI_MODEL
     genai.configure(api_key=api_key)
-    _gemini_model = genai.GenerativeModel(
-        model_name=getattr(__import__('web.config', fromlist=['GEMINI_MODEL']), 'GEMINI_MODEL', 'gemini-1.5-flash')
-    )
-    print("✅ Gemini via google-generativeai (API call will be logged for XPRIZE evidence)")
+    _gemini_model = genai.GenerativeModel(model_name=GEMINI_MODEL)
+    print("✅ Gemini via google-generativeai")
     return _gemini_model
 
+
 def call_gemini(prompt: str, system: str = "") -> str:
-    """Central wrapper: ALWAYS log for contest evidence (agent execution / API usage records)."""
-    from . import models  # avoid circular at top
+    """Central wrapper: ALWAYS log for contest evidence. Demo-safe without keys."""
     import datetime
     model = get_gemini_model()
     try:
-        if USE_VERTEX:
-            resp = model.generate_content(prompt)  # Vertex style
-            text = resp.text if hasattr(resp, 'text') else str(resp)
+        if model is None:
+            text = (
+                f"[demo-gemini] Treebeard acknowledges: {prompt[:120]}… "
+                "Set GEMINI_API_KEY for live XPRIZE evidence."
+            )
+        elif USE_VERTEX:
+            resp = model.generate_content(prompt)
+            text = resp.text if hasattr(resp, "text") else str(resp)
         else:
             if system:
                 resp = model.generate_content([system, prompt])
@@ -79,8 +86,9 @@ def call_gemini(prompt: str, system: str = "") -> str:
             text = resp.text
     except Exception as e:
         text = f"[Gemini error: {e}]"
-    
-    # Log every call (key for AI-Native Operations judging + "evidence of product running")
-    # In real: persist to DB AgentDecision or similar
-    print(f"[GEMINI_LOG] {datetime.datetime.utcnow().isoformat()} | prompt[:80]={prompt[:80]!r} | out[:80]={text[:80]!r}")
+
+    print(
+        f"[GEMINI_LOG] {datetime.datetime.utcnow().isoformat()} | "
+        f"prompt[:80]={prompt[:80]!r} | out[:80]={text[:80]!r}"
+    )
     return text
