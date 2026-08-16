@@ -18,15 +18,15 @@ def run_local_grader(phase: str, pillar: str, code: str) -> dict:
     # Security note: in prod, this should be heavily sandboxed (gvisor, firejail, or separate worker).
     # For MVP + contest demo we use temp files + trust (or limit to JAX).
     phase_dir = PHASES_DIR / {
-        "00": "00_The_Seed",
-        "01": "01_The_Enting",
-        "02": "02_The_Lexicon",
-    }.get(phase, "00_The_Seed")
+        "00": "C00_The_Seed",
+        "01": "C01_The_Enting",
+        "02": "C02_The_Lexicon",
+    }.get(phase, "C00_The_Seed")
     
     # Map pillar to exact file (simplified)
     pillar_map = {
         "jax": ("ex00_jax_soil/soil.py" if phase=="00" else "ex00_jax_bigram/bigram.py" if phase=="01" else "ex00_jax_lexicon/lexicon.py"),
-        "max": ("ex02_max_roots/roots.py" if phase=="00" else "ex02_max_bigram/bigram_graph.py" if phase=="01" else "ex02_max_lexicon/lexicon_graph.py"),
+        "max": ("ex01_max_roots/roots.py" if phase=="00" else "ex01_max_bigram/bigram_graph.py" if phase=="01" else "ex02_max_lexicon/lexicon_graph.py"),
     }
     target_rel = pillar_map.get(pillar, "ex00_jax_soil/soil.py")
     target = phase_dir / target_rel

@@ -131,25 +131,25 @@ A computer cannot read the letter 'A'. It only understands numbers. A Tokenizer 
 
     LEVEL_PATHS = {
         0: {
-            "jax": "max_env/phases/00_The_Seed/ex00_jax_soil/soil.py",
-            "mlx": "max_env/phases/00_The_Seed/ex01_mlx_branch/branch.py",
-            "max": "max_env/phases/00_The_Seed/ex02_max_roots/roots.py",
-            "mojo": "max_env/phases/00_The_Seed/ex03_mojo_sprout/sprout.mojo",
-            "grade_dir": "max_env/phases/00_The_Seed"
+            "jax": "max_env/phases/C00_The_Seed/ex00_jax_soil/soil.py",
+            "mlx": "max_env/phases/C00_The_Seed/ex01_mlx_branch/branch.py",
+            "max": "max_env/phases/C00_The_Seed/ex01_max_roots/roots.py",
+            "mojo": "max_env/phases/C00_The_Seed/ex02_mojo_sprout/sprout.mojo",
+            "grade_dir": "max_env/phases/C00_The_Seed"
         },
         1: {
-            "jax": "max_env/phases/01_The_Enting/ex00_jax_bigram/bigram.py",
-            "mlx": "max_env/phases/01_The_Enting/ex01_mlx_leaf/leaf.py",
-            "max": "max_env/phases/01_The_Enting/ex02_max_bigram/bigram_graph.py",
-            "mojo": "max_env/phases/01_The_Enting/ex03_mojo_bigram/bigram.mojo",
-            "grade_dir": "max_env/phases/01_The_Enting"
+            "jax": "max_env/phases/C01_The_Enting/ex00_jax_bigram/bigram.py",
+            "mlx": "max_env/phases/C01_The_Enting/ex01_mlx_leaf/leaf.py",
+            "max": "max_env/phases/C01_The_Enting/ex01_max_bigram/bigram_graph.py",
+            "mojo": "max_env/phases/C01_The_Enting/ex02_mojo_bigram/bigram.mojo",
+            "grade_dir": "max_env/phases/C01_The_Enting"
         },
         2: {
-            "jax": "max_env/phases/02_The_Lexicon/ex00_jax_lexicon/lexicon.py",
-            "mlx": "max_env/phases/02_The_Lexicon/ex01_mlx_lexicon/lexicon.py",
-            "max": "max_env/phases/02_The_Lexicon/ex02_max_lexicon/lexicon_graph.py",
-            "mojo": "max_env/phases/02_The_Lexicon/ex03_mojo_lexicon/tokenizer.mojo",
-            "grade_dir": "max_env/phases/02_The_Lexicon"
+            "jax": "max_env/phases/C02_The_Lexicon/ex00_jax_lexicon/lexicon.py",
+            "mlx": "max_env/phases/C02_The_Lexicon/ex01_mlx_lexicon/lexicon.py",
+            "max": "max_env/phases/C02_The_Lexicon/ex02_max_lexicon/lexicon_graph.py",
+            "mojo": "max_env/phases/C02_The_Lexicon/ex03_mojo_lexicon/tokenizer.mojo",
+            "grade_dir": "max_env/phases/C02_The_Lexicon"
         }
     }
     
@@ -242,14 +242,14 @@ A computer cannot read the letter 'A'. It only understands numbers. A Tokenizer 
         safe_filepath = os.path.abspath(os.path.join(base_dir, rel_path))
         
         # Security: Prevent directory traversal
-        if not safe_filepath.startswith(base_dir):
+        if not (safe_filepath == base_dir or safe_filepath.startswith(base_dir + os.sep)):
             log.write_line("❌ Oracle says: Access denied. You shall not pass.")
             return
-            
-        if not os.path.exists(os.path.dirname(safe_filepath)):
-            log.write_line(f"❌ Oracle says: This region of the forest has not grown yet.")
+
+        if not os.path.exists(safe_filepath):
+            log.write_line("❌ Oracle says: This region of the forest has not grown yet.")
             return
-            
+
         with self.suspend():
             subprocess.run([editor, safe_filepath])
 
@@ -258,14 +258,18 @@ A computer cannot read the letter 'A'. It only understands numbers. A Tokenizer 
         
         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
         cwd = os.path.join(base_dir, grade_dir)
-        script_path = os.path.join(cwd, "grademe.sh")
-        
+        script_name = "grademe.sh"
+        script_path = os.path.join(cwd, script_name)
+        if not os.path.exists(script_path):
+            script_name = "grademe.xprize.sh"
+            script_path = os.path.join(cwd, script_name)
+
         if not os.path.exists(script_path):
             log.write_line("❌ Oracle says: Grading script not found!")
             return
-            
+
         try:
-            result = subprocess.run(["./grademe.sh"], cwd=cwd, capture_output=True, text=True)
+            result = subprocess.run(["./" + script_name], cwd=cwd, capture_output=True, text=True)
             for line in result.stdout.splitlines():
                 log.write_line(line)
                 
