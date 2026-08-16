@@ -1,28 +1,40 @@
-import onnx
-from onnx import helper, TensorProto
-from max import engine
-import numpy as np
+"""MAX Graph: gather the 'hello' logit row, then softmax."""
 
-def create_onnx():
-    X = helper.make_tensor_value_info('input', TensorProto.FLOAT, [3])
-    Y = helper.make_tensor_value_info('output', TensorProto.FLOAT, [3])
-    
-    # Softmax node
-    node = helper.make_node('Softmax', inputs=['input'], outputs=['output'], axis=0)
-    graph = helper.make_graph(nodes=[node], name='SoftmaxGraph', inputs=[X], outputs=[Y])
-    model = helper.make_model(graph, producer_name='ents_oracle')
-    
-    onnx.save(model, 'bigram.onnx')
+import numpy as np
+from max import driver, engine
+from max.dtype import DType
+from max.graph import DeviceRef, Graph, TensorType, ops
+
+
+LOGITS = np.array(
+    [
+        [0.0, 0.0, 0.0],
+        [-1.0, -2.0, 5.0],
+        [0.0, 0.0, 0.0],
+    ],
+    dtype=np.float32,
+)
+
+
+def forward(idx):
+    table = ops.constant(LOGITS, dtype=DType.float32, device=DeviceRef.CPU())
+    row = ops.gather(table, idx, axis=0)
+    return ops.softmax(row)
+
 
 def main():
-    create_onnx()
-    session = engine.InferenceSession()
-    model = session.load('bigram.onnx')
-    
-    input_tensor = np.array([-1.0, -2.0, 5.0], dtype=np.float32)
-    out = model.execute(input=input_tensor)
-    
-    print(out['output'])
+    graph = Graph(
+        "bigram",
+        forward,
+        input_types=[TensorType(DType.int64, (1,), DeviceRef.CPU())],
+    )
+    session = engine.InferenceSession(
+        devices=driver.load_devices(driver.scan_available_devices())
+    )
+    model = session.load(graph)
+    out = model.execute(np.array([1], dtype=np.int64))
+    print(np.from_dlpack(out[0]))
+
 
 if __name__ == "__main__":
     main()

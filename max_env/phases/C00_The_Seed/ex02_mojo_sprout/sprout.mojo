@@ -1,33 +1,25 @@
-from std.tensor import Tensor
+# 3x4 embedding, row-major. Token 2 is the sprout.
+# Tensor API was removed from this Mojo nightly; List is the allowed container.
 
-fn main():
-    # 3x4 vocabulary embedding (matches ex00 JAX weights), row-major layout.
-    var weights = Tensor[DType.float32](3, 4)
+def main():
+    var weights = List[Float32]()
+    # row 0
+    weights.append(0.1)
+    weights.append(0.2)
+    weights.append(0.3)
+    weights.append(0.4)
+    # row 1
+    weights.append(-0.1)
+    weights.append(-0.2)
+    weights.append(-0.3)
+    weights.append(-0.4)
+    # row 2
+    weights.append(0.5)
+    weights.append(-0.2)
+    weights.append(0.8)
+    weights.append(0.1)
 
-    weights[0, 0] = 0.1
-    weights[0, 1] = 0.2
-    weights[0, 2] = 0.3
-    weights[0, 3] = 0.4
-
-    weights[1, 0] = -0.1
-    weights[1, 1] = -0.2
-    weights[1, 2] = -0.3
-    weights[1, 3] = -0.4
-
-    weights[2, 0] = 0.5
-    weights[2, 1] = -0.2
-    weights[2, 2] = 0.8
-    weights[2, 3] = 0.1
-
-    comptime cols = 4
-    comptime row = 2
-    var row_offset = row * cols
-
-    var ptr = weights.unsafe_ptr()
-    print(
-        ptr[row_offset + 0],
-        ptr[row_offset + 1],
-        ptr[row_offset + 2],
-        ptr[row_offset + 3],
-        sep=", ",
-    )
+    var cols = 4
+    var row = 2
+    var off = row * cols
+    print(weights[off], weights[off + 1], weights[off + 2], weights[off + 3], sep=", ")

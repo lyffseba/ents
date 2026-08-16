@@ -145,7 +145,10 @@ cd max_env && ./scripts/sync.sh "your message"
 
 ## Session (2026-08-16)
 - Fast-forwarded local `main` `cf96b96` → `94ced69` (6 commits).
-- Moved pre-pull untracked `ents-cli/game.py` to `/tmp/ents-cli-local-backup/` (origin already had a larger TUI).
-- Pointed `ents-cli` LEVEL_PATHS + grader lookup at real `C00`/`C01`/`C02` dirs; C02 falls back to `grademe.xprize.sh`.
-- Fixed `web/oracle.py` phase/file map (was looking for `00_The_Seed` / `ex02_max_*`).
-- Hugging Face remote still lagged at `cf96b96` until this session's push.
+- Hugging Face `main` synced to this line of work (`c700336` and follow-ups).
+- Honest Oracle: shared `max_env/phases/_oracle.sh`. Removed every `|| echo <expected>` cheat. Trophy requires zero FAILs.
+- Scaffolded MLX for C00 (`ex01_mlx_branch`) and C01 (`ex01_mlx_leaf`). Added `mlx` to `pixi.toml`.
+- C02 is a real Four-Pillar module with `SUBJECT.md` + `grademe.sh`. Tokenizer no longer uses `builtins.exec`.
+- `web/oracle.py` maps all four pillars and prefers `grademe.sh`.
+- `ents-cli` watches `current_level`; `max_env/play.py` is a launcher into the CLI.
+- Docs (README / ARCHITECTURE / AGENT_STATE) now match filesystem names. C03/C04 still unwritten.

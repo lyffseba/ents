@@ -35,30 +35,44 @@ When an AI tries to guess the next word, it spits out raw, messy scores called "
 ---
 
 ## Chapter II
-### Exercise 01: lore_max_bigram
+### Exercise 01: lore_mlx_leaf
 
 | Exercise 01 | |
 | :--- | :--- |
-| **Turn-in directory** | `ex01_max_bigram/` |
-| **Files to turn in** | `bigram_graph.py` |
-| **Allowed functions** | `max.engine.InferenceSession`, `onnx.helper.*`, `print` |
+| **Turn-in directory** | `ex01_mlx_leaf/` |
+| **Files to turn in** | `leaf.py` |
+| **Allowed functions** | `mlx.core.array`, `mlx.nn.softmax`, `print` |
 
-*   Construct an ONNX computational graph that performs a `Gather` (embedding lookup) followed by a `Softmax`.
-*   Pass the input token `[1]` through the graph.
-*   Output the probabilities from the MAX engine.
-*   Output format must exactly match: `[[2.470376e-03 9.088005e-04 9.966208e-01]]`
+*   Repeat the softmax of `[-1.0, -2.0, 5.0]` with MLX.
+*   Print the probability array. Same numeric target as JAX.
+*   On Linux the Oracle skips this pillar.
 
 ---
 
 ## Chapter III
+### Exercise 01b: lore_max_bigram
+
+| Exercise 01b | |
+| :--- | :--- |
+| **Turn-in directory** | `ex01_max_bigram/` |
+| **Files to turn in** | `bigram_graph.py` |
+| **Allowed functions** | `max.engine.InferenceSession`, `max.graph.Graph`, `max.graph.ops.gather`, `max.graph.ops.softmax`, `print` |
+
+*   Build a MAX Graph: gather row `1` of the 3x3 logit table, then softmax.
+*   Pass input token `[1]` through the compiled graph.
+*   Output must contain the softmax of `[-1.0, -2.0, 5.0]`.
+
+---
+
+## Chapter IV
 ### Exercise 02: lore_mojo_bigram
 
 | Exercise 02 | |
 | :--- | :--- |
 | **Turn-in directory** | `ex02_mojo_bigram/` |
 | **Files to turn in** | `bigram.mojo` |
-| **Allowed functions** | `Tensor`, `math.exp`, `print` |
+| **Allowed functions** | `List`, `math.exp`, `print` |
 
-*   Write a bare-metal Mojo script that manually calculates the Softmax of the array `[-1.0, -2.0, 5.0]`.
-*   Print the calculated probabilities separated by commas.
-*   Output format must closely match: `0.002428, 0.000893, 0.996678`
+*   Manually compute a numerically stable softmax of `[-1.0, -2.0, 5.0]` in Mojo.
+*   Print the probabilities separated by commas.
+*   Output format must closely match: `0.002470, 0.000909, 0.996621`

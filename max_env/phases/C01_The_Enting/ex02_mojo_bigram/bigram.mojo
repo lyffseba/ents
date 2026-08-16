@@ -1,25 +1,22 @@
-from std.tensor import Tensor
-import std.math
+import math
 
-fn main():
-    var logits = Tensor[DType.float32](3)
-    logits[0] = -1.0
-    logits[1] = -2.0
-    logits[2] = 5.0
+
+def main():
+    var logits = List[Float32]()
+    logits.append(-1.0)
+    logits.append(-2.0)
+    logits.append(5.0)
 
     var max_val = logits[0]
-    for i in range(1, 3):
+    for i in range(1, len(logits)):
         if logits[i] > max_val:
             max_val = logits[i]
 
     var sum_exp: Float32 = 0.0
-    var exps = Tensor[DType.float32](3)
-    for i in range(3):
-        exps[i] = math.exp(logits[i] - max_val)
-        sum_exp += exps[i]
+    var exps = List[Float32]()
+    for i in range(len(logits)):
+        var e = math.exp(logits[i] - max_val)
+        exps.append(e)
+        sum_exp += e
 
-    var probs = Tensor[DType.float32](3)
-    for i in range(3):
-        probs[i] = exps[i] / sum_exp
-
-    print(probs[0], probs[1], probs[2], sep=", ")
+    print(exps[0] / sum_exp, exps[1] / sum_exp, exps[2] / sum_exp, sep=", ")

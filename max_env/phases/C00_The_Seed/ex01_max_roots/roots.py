@@ -1,40 +1,39 @@
-import onnx
-from onnx import helper, TensorProto
-from max import engine, driver
-import numpy as np
+"""MAX Graph embedding lookup. ONNX is no longer a MAX input format."""
 
-def create_onnx():
-    weights = np.array([
-        [ 0.1,  0.2,  0.3,  0.4],
+import numpy as np
+from max import driver, engine
+from max.dtype import DType
+from max.graph import DeviceRef, Graph, TensorType, ops
+
+
+WEIGHTS = np.array(
+    [
+        [0.1, 0.2, 0.3, 0.4],
         [-0.1, -0.2, -0.3, -0.4],
-        [ 0.5, -0.2,  0.8,  0.1]
-    ], dtype=np.float32)
-    
-    weight_init = helper.make_tensor(
-        name='embedding_weights',
-        data_type=TensorProto.FLOAT,
-        dims=weights.shape,
-        vals=weights.flatten().tolist()
-    )
-    
-    X = helper.make_tensor_value_info('input', TensorProto.INT64, [1])
-    Y = helper.make_tensor_value_info('output', TensorProto.FLOAT, [1, 4])
-    
-    node = helper.make_node('Gather', inputs=['embedding_weights', 'input'], outputs=['output'], axis=0)
-    graph = helper.make_graph(nodes=[node], name='EmbeddingGraph', inputs=[X], outputs=[Y], initializer=[weight_init])
-    model = helper.make_model(graph, producer_name='ents_oracle')
-    
-    onnx.save(model, 'soil.onnx')
+        [0.5, -0.2, 0.8, 0.1],
+    ],
+    dtype=np.float32,
+)
+
+
+def forward(idx):
+    table = ops.constant(WEIGHTS, dtype=DType.float32, device=DeviceRef.CPU())
+    return ops.gather(table, idx, axis=0)
+
 
 def main():
-    create_onnx()
-    session = engine.InferenceSession(devices=driver.load_devices(driver.scan_available_devices()))
-    model = session.load('soil.onnx')
-    
-    input_tensor = np.array([2], dtype=np.int64)
-    out = model.execute(input=input_tensor)
-    
-    print(out['output'])
+    graph = Graph(
+        "soil",
+        forward,
+        input_types=[TensorType(DType.int64, (1,), DeviceRef.CPU())],
+    )
+    session = engine.InferenceSession(
+        devices=driver.load_devices(driver.scan_available_devices())
+    )
+    model = session.load(graph)
+    out = model.execute(np.array([2], dtype=np.int64))
+    print(np.from_dlpack(out[0]))
+
 
 if __name__ == "__main__":
     main()

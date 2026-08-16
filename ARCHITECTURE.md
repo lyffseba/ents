@@ -20,20 +20,14 @@ This repository is designed as an **End-to-End Educational Journey** for AI engi
 ## The Evolutionary Roadmap (Growing the Forest)
 To deeply understand the architecture, we will build from the simplest concepts up to the Ents engine, implementing each phase across our "Four Pillars" stack (JAX -> MLX -> MAX -> Mojo). **Each phase is designed as a self-guided, test-driven programming challenge (inspired by the trials of Fangorn Forest).**
 
-1. **Phase 00: The Seed (Embedding Layer) 🌱**
-   - *Challenge:* Given a token ID, retrieve its mathematical vector. 
-   - *Goal:* Master JAX arrays, ONNX/MAX graph compilation, and bare-metal Mojo memory access.
-2. **Phase 01: The Enting (Bigram Model) 🌿**
-   - *Challenge:* Convert raw logits into probabilities using Softmax.
-   - *Goal:* Predict the next token based only on the current token.
-3. **Phase 02: GPT-1 (The Sapling / Quickbeam) 🌲**
-   - The original OpenAI GPT (117M parameters). Introduces the core Self-Attention mechanism and positional embeddings. "Don't be hasty," but it's faster than what came before!
-3. **Phase 3: GPT-2 (The Young Ent / Treebeard's Awakening) 🌲**
-   - The 124M parameter model. We move LayerNorms to the input of each sub-block (pre-norm architecture) and expand the context window. It begins to speak with coherence.
-4. **Phase 4: GPT-3 "Ada" to "Davinci" (The Ancient Forest) 🌳**
-   - *Note: Ada, Babbage, Curie, and Davinci are actually GPT-3 models (scaling up to 175B parameters).* We will explore their architectural tweaks (like alternating dense and sparse attention patterns) at a smaller scale. These are the elder Ents.
-5. **Phase 5: The Entmoot (Custom Engine) 🏔️**
-   - Taking the best components of the above and writing hyper-optimized Flash Attention and matrix multiplication kernels in bare-metal Mojo. All the ancient wisdom comes together in an unstoppable march.
+1. **C00 The Seed (Embedding Layer) 🌱** — given a token ID, retrieve its vector. JAX + MLX + MAX + Mojo.
+2. **C01 The Enting (Bigram / Softmax) 🌿** — convert logits into next-token probabilities.
+3. **C02 The Lexicon (Tokenizer) 📖** — character vocabulary over Tiny Shakespeare; encode `Fangorn`.
+4. **C03 The Sapling (Self-Attention) 🌲** — *not scaffolded yet.* GPT-1-style attention.
+5. **C04 The Treebeard (GPT-2) 🌲** — *not scaffolded yet.* Pre-norm, 124M.
+6. **C05 The Entmoot (Production MAX) 🏔️** — Gemma / MAX deploy. Currently a stub.
+
+Filesystem names (`C00_The_Seed`, …) are the source of truth. Older docs that called C02 "GPT-1" were wrong.
 
 ## How to Follow the Journey
 For every Phase, the workflow is:
@@ -46,4 +40,4 @@ For every Phase, the workflow is:
 All development is tracked across two remotes:
 - **Hugging Face (`hf`):** For datasets, weights, and public versioning.
 - **GitHub (`origin`):** For CI/CD and open-source code collaboration.
-*(A unified sync script is provided in `scripts/sync.sh`)*
+*(A unified sync script lives at `max_env/scripts/sync.sh`. GitHub `main` is PR-protected.)*

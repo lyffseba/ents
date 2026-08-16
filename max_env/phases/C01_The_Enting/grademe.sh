@@ -1,45 +1,30 @@
 #!/usr/bin/env bash
+set -u
+cd "$(dirname "$0")"
+source "$(pwd)/../_oracle.sh"
 
 echo "🌿 Ents Grader (Oracle of Fangorn) - Module 01: The Enting"
 echo "--------------------------------------------------"
 
-# Grade ex00 (JAX)
-echo -n "Grading ex00 (JAX)... "
-output00=$(cd ex00_jax_bigram && pixi run python bigram.py 2>/dev/null)
-if [[ "$output00" == *"[0.00242826 0.00089339 0.99667835]"* ]] || [[ "$output00" == *"[2.4703"* ]] || [[ "$output00" == *"[0.002428"* ]]; then
-    echo "✅ PASS"
-else
-    echo "❌ FAIL"
-    echo "   Expected: [0.00242826 0.00089339 0.99667835]"
-    echo "   Got:      $output00"
-fi
+# float32 and float64 softmax([-1,-2,5]) both accepted; empty output is not.
+output00="$(oracle_capture ex00_jax_bigram python bigram.py || true)"
+oracle_grade "ex00 (JAX)" "$output00" \
+    "softmax([-1,-2,5]) ≈ [2.470376e-03 9.088005e-04 9.966208e-01]" \
+    "[2.4703" "[0.002470" "[0.002428" "[2.470376e-03"
 
-# Grade ex01 (MAX)
-echo -n "Grading ex01 (MAX)... "
-output01=$(cd ex01_max_bigram && pixi run python bigram_graph.py 2>/dev/null || echo "[[0.00242826 0.00089339 0.99667835]]")
-if [[ "$output01" == *"[0.00242826 0.00089339 0.99667835]"* ]] || [[ "$output01" == *"[[0.00242826 0.00089339 0.99667835]]"* ]] || [[ "$output01" == *"[2.4703"* ]]; then
-    echo "✅ PASS"
-else
-    echo "❌ FAIL (Did you generate bigram.onnx and run InferenceSession?)"
-fi
+oracle_mlx_or_skip "ex01 (MLX)" ex01_mlx_leaf leaf.py \
+    "softmax([-1,-2,5]) ≈ [2.470376e-03 9.088005e-04 9.966208e-01]" \
+    "[2.4703" "[0.002470" "[0.002428" "0.00247" "0.002428"
 
-# Grade ex02 (Mojo)
-echo -n "Grading ex02 (Mojo)... "
-output02=$(cd ex02_mojo_bigram && MAGIC_DIR=$PWD/../../../../.pixi/envs/default pixi run mojo bigram.mojo 2>/dev/null)
-if { [[ "$output02" == *"0.002428"* ]] && [[ "$output02" == *"0.996678"* ]]; } \
-    || { [[ "$output02" == *"0.002470"* ]] && [[ "$output02" == *"0.996621"* ]]; } \
-    || [[ "$output02" == *"2.470376e-03"* ]] || [[ "$output02" == *"2.4703"* ]] \
-    || { [[ "$output02" == *"0.0024"* ]] && [[ "$output02" == *"0.996"* ]]; }; then
-    echo "✅ PASS"
-else
-    echo "❌ FAIL"
-    echo "   Expected softmax probabilities near: 0.002470, 0.000909, 0.996621"
-    echo "   Got:      $output02"
-fi
+output_max="$(oracle_capture ex01_max_bigram python bigram_graph.py || true)"
+oracle_grade "ex02 (MAX)" "$output_max" \
+    "[[2.470376e-03 9.088005e-04 9.966208e-01]]" \
+    "[2.4703" "[0.002470" "[0.002428" "[[2.470376e-03"
 
-echo "--------------------------------------------------"
-if [[ "$output00" == *"[0.0024"* ]] || [[ "$output00" == *"[2.47"* ]] && [[ "$output02" == *"0.0024"* ]] || [[ "$output02" == *"2.47"* ]]; then
-    echo "🏆 THE ENTING HAS SPOKEN. You are ready for Phase 02."
-else
-    echo "⚠️ Keep trying! The Enting remains silent."
-fi
+output_mojo="$(oracle_capture_mojo ex02_mojo_bigram bigram.mojo || true)"
+oracle_grade "ex03 (Mojo)" "$output_mojo" \
+    "0.002470, 0.000909, 0.996621 (or 0.002428, 0.000893, 0.996678)" \
+    "0.002470" "0.002428" "2.470376e-03" "2.4703"
+
+oracle_summary "THE ENTING HAS SPOKEN. You are ready for Phase 02." \
+    "Keep trying! The Enting remains silent."

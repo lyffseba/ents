@@ -68,12 +68,12 @@ For every module, you must write code for all four paradigms. You cannot progres
 ## 🗺️ The Curriculum
 Your journey takes place inside the `max_env/phases/` directory. Start at Chapter 00.
 
-*   👉 [**C00 - The Seed**](max_env/phases/C00_The_Seed/SUBJECT.md): Tensors, memory access, and the Embedding Layer.
-*   👉 [**C01 - The Enting**](max_env/phases/C01_The_Enting/SUBJECT.md): Logits, Softmax, and probabilities.
-*   👉 [**C02 - The Lexicon**](max_env/phases/C02_The_Lexicon/SUBJECT.md): Tokenization, Data Preparation, and the Atomic GPT.
-*   *C03 - The Sapling (Coming Soon): Self-Attention.*
-*   *C04 - The Treebeard (Coming Soon): The full GPT-2 architecture.*
-*   👉 [**C05 - The Entmoot**](max_env/phases/C05_The_Entmoot/SUBJECT.md): Deploying Gemma models in Production with MAX.
+*   👉 [**C00 - The Seed**](max_env/phases/C00_The_Seed/SUBJECT.md): Embeddings across JAX, MLX, MAX, Mojo.
+*   👉 [**C01 - The Enting**](max_env/phases/C01_The_Enting/SUBJECT.md): Softmax / bigram across all four pillars.
+*   👉 [**C02 - The Lexicon**](max_env/phases/C02_The_Lexicon/SUBJECT.md): Character tokenizer; encode `Fangorn`.
+*   *C03 - The Sapling (not written): Self-Attention.*
+*   *C04 - The Treebeard (not written): GPT-2.*
+*   👉 [**C05 - The Entmoot**](max_env/phases/C05_The_Entmoot/SUBJECT.md): Production MAX / Gemma (stub).
 
 ### How to test your code
 Whenever you think you have solved a module, open your terminal and run the grader:
@@ -85,8 +85,13 @@ cd max_env/phases/C00_The_Seed
 ---
 
 ## The Ents Universe
-This repository (`ents`) is the **Master Core Educational Engine**. In the future, this universe will expand into:
-1. **`ents-cli`:** A standalone terminal RPG game where you play through the modules to "wake the Ents".
-2. **`ents-pi-mod`:** A standalone extension for Pi (the coding agent) to interact with these models locally.
+This repository is both the curriculum and the XPRIZE surface:
+
+1. **`max_env/phases/`** — Trial of Fangorn. Grade with `./grademe.sh`.
+2. **`ents-cli/game.py`** — Textual RPG over those same files (`python ents-cli/game.py`).
+3. **`web/`** — Ents Academy (FastAPI). Demo mode works without a Gemini key: `make -C web smoke`.
+4. **`ents-pi-mod/`** — Pi coding-agent extension (early).
+
+C03 (Self-Attention) and C04 (GPT-2) are not written yet. C05 is a production stub.
 
 Good luck. The forest awaits.
