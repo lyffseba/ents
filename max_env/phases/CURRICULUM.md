@@ -1,6 +1,6 @@
 # Trial of Fangorn — filesystem contract
 
-One map. Paths here are the only paths CLI, web Oracle, and graders may use.
+One map. Human copy of `curriculum.json` (imported by CLI, web Oracle, and `ents-pi-mod`).
 
 | Phase | Directory | JAX | MLX | MAX | Mojo | Grader |
 |---|---|---|---|---|---|---|

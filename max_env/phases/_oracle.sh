@@ -134,3 +134,12 @@ oracle_summary() {
     echo "⚠️ ${keep_trying}"
     return 1
 }
+
+# Optional: GRADE_PILLAR=jax|mlx|max|mojo grades one exercise and exits.
+oracle_wants() {
+    local pillar="$1"
+    if [[ -z "${GRADE_PILLAR:-}" ]]; then
+        return 0
+    fi
+    [[ "$GRADE_PILLAR" == "$pillar" ]]
+}

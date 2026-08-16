@@ -1,82 +1,52 @@
 """
-web/oracle.py - Server-side Oracle of Fangorn.
+Server-side Oracle of Fangorn.
 
-Runs the real module grademe.sh (no answer-echo fallbacks).
-Gemini review is layered on top when a key is present; demo mode still grades.
+Grades one pillar via GRADE_PILLAR so a broken MAX file does not fail a JAX submit.
+Paths come from max_env/phases/curriculum.json.
 """
 
 from __future__ import annotations
 
+import os
 import subprocess
+import sys
 from pathlib import Path
 
 from .deps import call_gemini
 
 PHASES_DIR = Path(__file__).parent.parent / "max_env" / "phases"
+if str(PHASES_DIR) not in sys.path:
+    sys.path.insert(0, str(PHASES_DIR))
 
-PHASE_DIRS = {
-    "00": "C00_The_Seed",
-    "01": "C01_The_Enting",
-    "02": "C02_The_Lexicon",
-}
-
-PILLAR_FILES = {
-    "00": {
-        "jax": "ex00_jax_soil/soil.py",
-        "mlx": "ex01_mlx_branch/branch.py",
-        "max": "ex02_max_roots/roots.py",
-        "mojo": "ex03_mojo_sprout/sprout.mojo",
-    },
-    "01": {
-        "jax": "ex00_jax_bigram/bigram.py",
-        "mlx": "ex01_mlx_leaf/leaf.py",
-        "max": "ex02_max_bigram/bigram_graph.py",
-        "mojo": "ex03_mojo_bigram/bigram.mojo",
-    },
-    "02": {
-        "jax": "ex00_jax_lexicon/lexicon.py",
-        "mlx": "ex01_mlx_lexicon/lexicon.py",
-        "max": "ex02_max_lexicon/lexicon_graph.py",
-        "mojo": "ex03_mojo_lexicon/tokenizer.mojo",
-    },
-}
-
-
-def _grader_script(phase_dir: Path) -> Path | None:
-    for name in ("grademe.sh",):
-        candidate = phase_dir / name
-        if candidate.exists():
-            return candidate
-    return None
+from curriculum import grade_script, phase_dir, pillar_path  # noqa: E402
 
 
 def run_local_grader(phase: str, pillar: str, code: str) -> dict:
-    """Write the submitted file, run the module Oracle, restore the original."""
-    phase_dir = PHASES_DIR / PHASE_DIRS.get(phase, "C00_The_Seed")
-    files = PILLAR_FILES.get(phase, PILLAR_FILES["00"])
-    target_rel = files.get(pillar)
-    if not target_rel:
-        return {"passed": False, "output": f"Unknown pillar {pillar!r} for phase {phase!r}."}
+    try:
+        target = pillar_path(phase, pillar)
+        grader = grade_script(phase)
+    except KeyError:
+        return {"passed": False, "output": f"Unknown phase/pillar {phase!r}/{pillar!r}."}
 
-    target = phase_dir / target_rel
-    grader = _grader_script(phase_dir)
-    if grader is None:
-        return {"passed": False, "output": f"No grader in {phase_dir}."}
+    if not grader.is_file():
+        return {"passed": False, "output": f"No grader in {phase_dir(phase)}."}
 
     target.parent.mkdir(parents=True, exist_ok=True)
     backup = target.read_text() if target.exists() else None
+    env = {**os.environ, "GRADE_PILLAR": pillar}
     try:
         target.write_text(code)
         result = subprocess.run(
             [f"./{grader.name}"],
-            cwd=str(phase_dir),
+            cwd=str(grader.parent),
             capture_output=True,
             text=True,
             timeout=90,
+            env=env,
         )
         output = (result.stdout or "") + (result.stderr or "")
         passed = "✅ PASS" in output and "❌ FAIL" not in output
-        return {"passed": passed, "output": output[-2000:]}
+        return {"passed": passed, "output": output[-2000:], "pillar": pillar}
     except subprocess.TimeoutExpired:
         return {"passed": False, "output": "Oracle timed out after 90s."}
     finally:

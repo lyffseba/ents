@@ -149,5 +149,6 @@ cd max_env && ./scripts/sync.sh "your message"
 - MAX uses `max.graph` (ONNX rejected by this nightly). Mojo C00/C01 use `List`; C02 encodes Fangorn without `exec`.
 - Sequential dirs: `ex00` JAX, `ex01` MLX, `ex02` MAX, `ex03` Mojo. Deleted leftover `ex00_atomic_gpt` and `grademe.xprize.sh`.
 - C01 JAX now builds the 3x3 transition matrix and softmaxes row 1, matching SUBJECT.md.
-- C05 SUBJECT says the module is unwritten. Contract: `max_env/phases/CURRICULUM.md`.
+- C05 SUBJECT says the module is unwritten. Contract: `max_env/phases/curriculum.json` (+ CURRICULUM.md).
+- CLI remounts action buttons after Enter Fangorn (was stuck on intro). Web Oracle grades one pillar via `GRADE_PILLAR`.
 - MLX still skipped: MAX nightly is CPython 3.14; MLX wheels stop at 3.13.
