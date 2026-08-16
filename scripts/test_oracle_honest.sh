@@ -24,4 +24,20 @@ if echo "$out" | grep -q "YOU HAVE PLANTED THE SEED"; then
     echo "CHEAT: trophy printed despite failures"
     exit 1
 fi
+
+# Single-pillar: a broken JAX submit must not be judged by MAX/Mojo results.
+export GRADE_PILLAR=jax
+out_jax="$("$PHASE/grademe.sh" || true)"
+unset GRADE_PILLAR
+if echo "$out_jax" | grep -q "ex02 (MAX)"; then
+    echo "CHEAT: GRADE_PILLAR=jax still ran MAX"
+    exit 1
+fi
+if echo "$out_jax" | grep -q "Grading ex00 (JAX)... ❌ FAIL"; then
+    echo "PILLAR: jax-only grade rejected broken soil.py"
+else
+    echo "PILLAR: jax-only grade did not report JAX fail"
+    echo "$out_jax"
+    exit 1
+fi
 echo "Oracle honesty check passed"
