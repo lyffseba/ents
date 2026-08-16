@@ -13,7 +13,7 @@ def encode(text: str, sample: str = SAMPLE):
 def main():
     corpus = Path(__file__).resolve().parents[1] / "ex03_mojo_lexicon" / "input.txt"
     text = corpus.read_text()
-    print(encode(text))
+    print(list(encode(text).tolist()))
 
 
 if __name__ == "__main__":
