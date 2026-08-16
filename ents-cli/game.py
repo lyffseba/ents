@@ -1,9 +1,8 @@
 import os
-import sys
 import subprocess
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Header, Footer, Static, Button, Markdown, Log
+from textual.widgets import Header, Footer, Button, Markdown, Log
 from textual.reactive import reactive
 from textual.binding import Binding
 
@@ -34,9 +33,9 @@ An "Embedding" is just a lookup table that turns a word into a row of numbers. Y
 
 **Your Quests:**
 - Edit `soil.py` to use JAX arrays.
-- Edit `branch.py` to use MLX arrays.
-- Edit `roots.py` to build an ONNX Graph and run MAX.
-- Edit `sprout.mojo` to access raw memory.
+- Edit `branch.py` to use MLX arrays (skipped if mlx is not installed).
+- Edit `roots.py` to build a MAX Graph gather.
+- Edit `sprout.mojo` to read row 2 of a row-major list.
 """
 
 class EntsGame(App):
@@ -111,9 +110,9 @@ When an AI tries to guess the next word, it spits out raw, messy scores called "
 
 **Your Quests:**
 - Edit `bigram.py` to use JAX Softmax.
-- Edit `leaf.py` to use MLX Softmax.
-- Edit `bigram_graph.py` to build an ONNX Softmax node.
-- Edit `bigram.mojo` to manually calculate Softmax in Mojo.
+- Edit `leaf.py` to use MLX Softmax (skipped if mlx is not installed).
+- Edit `bigram_graph.py` to gather + softmax in a MAX Graph.
+- Edit `bigram.mojo` to compute softmax by hand.
 """,
         2: """
 # Level 02: The Lexicon
@@ -131,26 +130,26 @@ A computer cannot read the letter 'A'. It only understands numbers. A Tokenizer 
 
     LEVEL_PATHS = {
         0: {
-            "jax": "max_env/phases/00_The_Seed/ex00_jax_soil/soil.py",
-            "mlx": "max_env/phases/00_The_Seed/ex01_mlx_branch/branch.py",
-            "max": "max_env/phases/00_The_Seed/ex02_max_roots/roots.py",
-            "mojo": "max_env/phases/00_The_Seed/ex03_mojo_sprout/sprout.mojo",
-            "grade_dir": "max_env/phases/00_The_Seed"
+            "jax": "max_env/phases/C00_The_Seed/ex00_jax_soil/soil.py",
+            "mlx": "max_env/phases/C00_The_Seed/ex01_mlx_branch/branch.py",
+            "max": "max_env/phases/C00_The_Seed/ex02_max_roots/roots.py",
+            "mojo": "max_env/phases/C00_The_Seed/ex03_mojo_sprout/sprout.mojo",
+            "grade_dir": "max_env/phases/C00_The_Seed",
         },
         1: {
-            "jax": "max_env/phases/01_The_Enting/ex00_jax_bigram/bigram.py",
-            "mlx": "max_env/phases/01_The_Enting/ex01_mlx_leaf/leaf.py",
-            "max": "max_env/phases/01_The_Enting/ex02_max_bigram/bigram_graph.py",
-            "mojo": "max_env/phases/01_The_Enting/ex03_mojo_bigram/bigram.mojo",
-            "grade_dir": "max_env/phases/01_The_Enting"
+            "jax": "max_env/phases/C01_The_Enting/ex00_jax_bigram/bigram.py",
+            "mlx": "max_env/phases/C01_The_Enting/ex01_mlx_leaf/leaf.py",
+            "max": "max_env/phases/C01_The_Enting/ex02_max_bigram/bigram_graph.py",
+            "mojo": "max_env/phases/C01_The_Enting/ex03_mojo_bigram/bigram.mojo",
+            "grade_dir": "max_env/phases/C01_The_Enting",
         },
         2: {
-            "jax": "max_env/phases/02_The_Lexicon/ex00_jax_lexicon/lexicon.py",
-            "mlx": "max_env/phases/02_The_Lexicon/ex01_mlx_lexicon/lexicon.py",
-            "max": "max_env/phases/02_The_Lexicon/ex02_max_lexicon/lexicon_graph.py",
-            "mojo": "max_env/phases/02_The_Lexicon/ex03_mojo_lexicon/tokenizer.mojo",
-            "grade_dir": "max_env/phases/02_The_Lexicon"
-        }
+            "jax": "max_env/phases/C02_The_Lexicon/ex00_jax_lexicon/lexicon.py",
+            "mlx": "max_env/phases/C02_The_Lexicon/ex01_mlx_lexicon/lexicon.py",
+            "max": "max_env/phases/C02_The_Lexicon/ex02_max_lexicon/lexicon_graph.py",
+            "mojo": "max_env/phases/C02_The_Lexicon/ex03_mojo_lexicon/tokenizer.mojo",
+            "grade_dir": "max_env/phases/C02_The_Lexicon",
+        },
     }
     
     def compose(self) -> ComposeResult:
@@ -186,10 +185,8 @@ A computer cannot read the letter 'A'. It only understands numbers. A Tokenizer 
         
         if event.button.id == "btn_enter":
             self.current_level = 0
-            lore_box.update(self.LEVEL_LORE[self.current_level])
             log.write_line("\n[bold green]🌳 You step into the dark forest... Level 00 begins.[/]")
-            self.recompose_action_box()
-            
+
         elif event.button.id == "btn_lore":
             lore_box.update(self.LEVEL_LORE.get(self.current_level, "No lore found."))
             log.write_line(f"📜 Reading ancient scrolls for Level {self.current_level:02}...")
@@ -218,21 +215,15 @@ A computer cannot read the letter 'A'. It only understands numbers. A Tokenizer 
             if self.current_level < 2:
                 self.current_level += 1
                 log.write_line(f"\n[bold green]🌳 You have advanced to Level {self.current_level:02}![/]")
-                lore_box.update(self.LEVEL_LORE[self.current_level])
             else:
-                log.write_line(f"\n[bold red]🚫 You have reached the end of the current forest.[/]")
+                log.write_line("\n[bold red]🚫 You have reached the end of the current forest.[/]")
 
-    def recompose_action_box(self) -> None:
-        """Dynamically replace buttons when entering the first level."""
-        action_box = self.query_one("#action-box")
-        action_box.remove_children()
-        action_box.mount(Button("📜 Read Level Lore", id="btn_lore", variant="primary"))
-        action_box.mount(Button("🧮 Edit JAX (Math)", id="btn_jax", variant="default"))
-        action_box.mount(Button("🍎 Edit MLX (Apple)", id="btn_mlx", variant="default"))
-        action_box.mount(Button("🕸️ Edit MAX (Graph)", id="btn_max", variant="default"))
-        action_box.mount(Button("🦀 Edit Mojo (Metal)", id="btn_mojo", variant="default"))
-        action_box.mount(Button("🔮 Summon Oracle (Grade)", id="btn_grade", variant="warning"))
-        action_box.mount(Button("⏭️ Next Level", id="btn_next", variant="success"))
+    def watch_current_level(self, level: int) -> None:
+        try:
+            lore_box = self.query_one("#lore-box", Markdown)
+        except Exception:
+            return
+        lore_box.update(self.LEVEL_LORE.get(level, ""))
 
     def open_editor(self, rel_path: str) -> None:
         log = self.query_one("#oracle-log", Log)
@@ -242,14 +233,14 @@ A computer cannot read the letter 'A'. It only understands numbers. A Tokenizer 
         safe_filepath = os.path.abspath(os.path.join(base_dir, rel_path))
         
         # Security: Prevent directory traversal
-        if not safe_filepath.startswith(base_dir):
+        if not (safe_filepath == base_dir or safe_filepath.startswith(base_dir + os.sep)):
             log.write_line("❌ Oracle says: Access denied. You shall not pass.")
             return
-            
-        if not os.path.exists(os.path.dirname(safe_filepath)):
-            log.write_line(f"❌ Oracle says: This region of the forest has not grown yet.")
+
+        if not os.path.exists(safe_filepath):
+            log.write_line("❌ Oracle says: This region of the forest has not grown yet.")
             return
-            
+
         with self.suspend():
             subprocess.run([editor, safe_filepath])
 
@@ -258,14 +249,14 @@ A computer cannot read the letter 'A'. It only understands numbers. A Tokenizer 
         
         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
         cwd = os.path.join(base_dir, grade_dir)
-        script_path = os.path.join(cwd, "grademe.sh")
-        
+        script_name = "grademe.sh"
+        script_path = os.path.join(cwd, script_name)
         if not os.path.exists(script_path):
             log.write_line("❌ Oracle says: Grading script not found!")
             return
-            
+
         try:
-            result = subprocess.run(["./grademe.sh"], cwd=cwd, capture_output=True, text=True)
+            result = subprocess.run(["./" + script_name], cwd=cwd, capture_output=True, text=True)
             for line in result.stdout.splitlines():
                 log.write_line(line)
                 

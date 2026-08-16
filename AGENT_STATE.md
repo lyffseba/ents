@@ -1,12 +1,12 @@
 # 🤖 Ents - The Memory Crystal (Continuous Development State)
 > *This file is the literal "brain" and memory state between AI coding sessions across different machines or agents.*
 
-## Current Status (2026-06-02)
+## Current Status (2026-08-16)
 
 - **Project Goal:** Building a highly secure, standalone educational AI inference engine (`ents`) merging MLX, MAX, JAX, and Mojo, focusing on the evolutionary history of LLMs (from Bigram up to Gemma 4), themed around the **Ents of Middle-earth** 🌳.
-- **Project Scope:** `ents` is the core Awakening repository. Standalone CLI and Pi Mod repositories will be built in the future to interact with this core.
-- **Environment:** Pixi workspace in `max_env/` with strict dependencies (`max`, `modular`, `mojo`, `jax`, `flax`, `onnx`). **Platform pin:** `osx-arm64` only (`max_env/pixi.toml`).
-- **Latest Commit:** `37b4646` — *feat: implement real mojo bare-metal pointer operations for C00 and C01, removing static output stubs* (2026-06-02 19:10 +0200).
+- **Project Scope:** `ents` is now a dual-surface repo: the core Awakening curriculum (`max_env/`) plus the XPRIZE Ents Academy web platform (`web/`), TUI (`ents-cli/`), and Pi extension (`ents-pi-mod/`).
+- **Environment:** Pixi workspace in `max_env/` with strict dependencies (`max`, `modular`, `mojo`, `jax`, `flax`, `onnx`). **Platform pin:** `osx-arm64` only (`max_env/pixi.toml`). Web app uses a separate `web/requirements.txt` venv.
+- **Latest work:** PR #1 (`fix/c-prefixed-phase-paths`). Curriculum contract is `max_env/phases/CURRICULUM.md`. Exercise dirs are sequential `ex00`–`ex03`.
 
 ### Milestones Achieved (Historical)
 - Renamed all platforms (GitHub, Hugging Face) to `ents`, absorbing `gemax`, `44`, `77`, `mlx`, and `arton`.
@@ -112,11 +112,11 @@ cd max_env && ./scripts/sync.sh "your message"
 
 ## 🚀 NEXT STEPS FOR THE ACTIVE AGENT
 
-1. **Sync Hugging Face:** `git push hf main` so HF matches GitHub @ `37b4646`.
-2. **MLX Integration:** Scaffold MLX implementations for C00 and C01 (Fourth Pillar still missing in phases 00–01).
-3. **Setup C02 (The Sapling / Self-Attention):** Follow Trial of Fangorn format with Four Pillars stubs.
-4. **Multi-platform docs:** Consider a `PLATFORM.md` noting Intel vs Apple Silicon constraints for contributors on x86 Macs.
-5. **Spin-off Planning:** Continue `ents-cli` Textual RPG; outline `ents-pi-mod` when core phases stabilize.
+1. **Sync remotes after this session:** push `origin` + `hf` so Hugging Face is no longer stuck at `cf96b96`.
+2. **MLX Integration:** Scaffold MLX implementations for C00 and C01 (Fourth Pillar still missing in phases 00–01). MLX is still absent from `pixi.toml`.
+3. **Honest graders:** C00 MAX and C02 MAX/Mojo still `echo` expected output on failure. Remove those fallbacks.
+4. **C03 The Sapling:** Self-Attention module is still missing. Architecture.md numbering still disagrees with filesystem C02=Lexicon.
+5. **XPRIZE live path:** GEMINI_API_KEY, Stripe, Cloud Run URL, 3-min video. Demo mode works without keys.
 
 ---
 *Agent Instructions:* When starting a new session on any machine, read this file FIRST to instantly understand where the project left off and regain full context. When completing a task, you MUST update the "Current Status" and "Next Steps" sections accordingly before terminating your session or handing off to another agent.
@@ -142,3 +142,12 @@ cd max_env && ./scripts/sync.sh "your message"
 - Fixed `web/app.py` config imports (`get_gemini_key`, `USE_VERTEX`).
 - Phase download maps to `C00`/`C01`/`C02` dirs when present.
 - `/health` + `/healthz`; static `.gitkeep`; local contest build docs in README.
+
+## Session (2026-08-16)
+- Fast-forwarded local `main` `cf96b96` → `94ced69`, then this PR.
+- Honest Oracle (`_oracle.sh`). Relocated `modular.cfg` is rewritten so Mojo finds `std`.
+- MAX uses `max.graph` (ONNX rejected by this nightly). Mojo C00/C01 use `List`; C02 encodes Fangorn without `exec`.
+- Sequential dirs: `ex00` JAX, `ex01` MLX, `ex02` MAX, `ex03` Mojo. Deleted leftover `ex00_atomic_gpt` and `grademe.xprize.sh`.
+- C01 JAX now builds the 3x3 transition matrix and softmaxes row 1, matching SUBJECT.md.
+- C05 SUBJECT says the module is unwritten. Contract: `max_env/phases/CURRICULUM.md`.
+- MLX still skipped: MAX nightly is CPython 3.14; MLX wheels stop at 3.13.

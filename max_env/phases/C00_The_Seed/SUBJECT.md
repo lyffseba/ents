@@ -38,33 +38,47 @@ Your goal in this module is simple: find the row of numbers for Token ID `2`.
 ---
 
 ## Chapter II
-### Exercise 01: lore_roots
+### Exercise 01: lore_branch
 
 | Exercise 01 | |
 | :--- | :--- |
-| **Turn-in directory** | `ex01_max_roots/` |
-| **Files to turn in** | `roots.py` |
-| **Allowed functions** | `max.engine.InferenceSession`, `onnx.helper.*`, `print` |
+| **Turn-in directory** | `ex01_mlx_branch/` |
+| **Files to turn in** | `branch.py` |
+| **Allowed functions** | `mlx.core.array`, `print` |
 
-*   Now, we compile this operation into a computational graph.
-*   Write a script that constructs an ONNX model with a single `Gather` node (representing an embedding lookup) using the exact same weights as ex00.
-*   Save the model as `soil.onnx`.
-*   Initialize a Modular MAX `InferenceSession`, load the ONNX file, and execute it using the input `[2]`.
-*   Output format must exactly match: `[[ 0.5 -0.2  0.8  0.1]]`
+*   Repeat the embedding lookup on Apple Silicon with MLX.
+*   Same 3x4 weights and token ID `2` as the JAX soil.
+*   Output must contain: `[ 0.5 -0.2  0.8  0.1]` (or the comma-separated form).
+*   On Linux the Oracle skips this pillar.
 
 ---
 
 ## Chapter III
-### Exercise 02: lore_sprout
+### Exercise 02: lore_roots
 
 | Exercise 02 | |
 | :--- | :--- |
-| **Turn-in directory** | `ex02_mojo_sprout/` |
-| **Files to turn in** | `sprout.mojo` |
-| **Allowed functions** | `Tensor`, `print` |
+| **Turn-in directory** | `ex02_max_roots/` |
+| **Files to turn in** | `roots.py` |
+| **Allowed functions** | `max.engine.InferenceSession`, `max.graph.Graph`, `max.graph.ops.gather`, `print` |
 
-*   Forget JAX. Forget Python. It's time to touch the bare metal.
-*   Write a Mojo script that initializes a 2D `Tensor` representing the vocabulary weights from ex00.
-*   Access the raw memory to pull the values for the 3rd row (index 2).
-*   Print them out separated by commas.
+*   Compile the same embedding lookup as a MAX Graph (`ops.gather` over the 3x4 table).
+*   Execute it with input `[2]`.
+*   Output format must contain: `[[ 0.5 -0.2  0.8  0.1]]`
+*   Current MAX nightlies do **not** load ONNX. Do not submit an `.onnx` file.
+
+---
+
+## Chapter IV
+### Exercise 03: lore_sprout
+
+| Exercise 03 | |
+| :--- | :--- |
+| **Turn-in directory** | `ex03_mojo_sprout/` |
+| **Files to turn in** | `sprout.mojo` |
+| **Allowed functions** | `List`, `print` |
+
+*   Forget JAX. Forget Python. Store the 3x4 table in a row-major `List[Float32]`.
+*   Read the four values of row index `2`.
+*   Print them separated by commas.
 *   Output format must exactly match: `0.5, -0.2, 0.8, 0.1`

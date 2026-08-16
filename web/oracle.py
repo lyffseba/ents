@@ -1,62 +1,106 @@
 """
-web/oracle.py - Server-side "Oracle of Fangorn" for web lab.
-Reuses logic from max_env/phases/*/grademe.sh (string match + pixi run patterns).
-Adds Gemini qualitative review on top (the AI layer for XPRIZE).
-For full pillars: encourage local download + grademe.sh (the real Oracle).
-JAX subset can run in-process for instant feedback.
+web/oracle.py - Server-side Oracle of Fangorn.
+
+Runs the real module grademe.sh (no answer-echo fallbacks).
+Gemini review is layered on top when a key is present; demo mode still grades.
 """
 
+from __future__ import annotations
+
 import subprocess
-import os
 from pathlib import Path
+
 from .deps import call_gemini
 
 PHASES_DIR = Path(__file__).parent.parent / "max_env" / "phases"
 
+PHASE_DIRS = {
+    "00": "C00_The_Seed",
+    "01": "C01_The_Enting",
+    "02": "C02_The_Lexicon",
+}
+
+PILLAR_FILES = {
+    "00": {
+        "jax": "ex00_jax_soil/soil.py",
+        "mlx": "ex01_mlx_branch/branch.py",
+        "max": "ex02_max_roots/roots.py",
+        "mojo": "ex03_mojo_sprout/sprout.mojo",
+    },
+    "01": {
+        "jax": "ex00_jax_bigram/bigram.py",
+        "mlx": "ex01_mlx_leaf/leaf.py",
+        "max": "ex02_max_bigram/bigram_graph.py",
+        "mojo": "ex03_mojo_bigram/bigram.mojo",
+    },
+    "02": {
+        "jax": "ex00_jax_lexicon/lexicon.py",
+        "mlx": "ex01_mlx_lexicon/lexicon.py",
+        "max": "ex02_max_lexicon/lexicon_graph.py",
+        "mojo": "ex03_mojo_lexicon/tokenizer.mojo",
+    },
+}
+
+
+def _grader_script(phase_dir: Path) -> Path | None:
+    for name in ("grademe.sh",):
+        candidate = phase_dir / name
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def run_local_grader(phase: str, pillar: str, code: str) -> dict:
-    """Write temp code to the ex dir and invoke grademe.sh (like TUI does)."""
-    # Security note: in prod, this should be heavily sandboxed (gvisor, firejail, or separate worker).
-    # For MVP + contest demo we use temp files + trust (or limit to JAX).
-    phase_dir = PHASES_DIR / {
-        "00": "00_The_Seed",
-        "01": "01_The_Enting",
-        "02": "02_The_Lexicon",
-    }.get(phase, "00_The_Seed")
-    
-    # Map pillar to exact file (simplified)
-    pillar_map = {
-        "jax": ("ex00_jax_soil/soil.py" if phase=="00" else "ex00_jax_bigram/bigram.py" if phase=="01" else "ex00_jax_lexicon/lexicon.py"),
-        "max": ("ex02_max_roots/roots.py" if phase=="00" else "ex02_max_bigram/bigram_graph.py" if phase=="01" else "ex02_max_lexicon/lexicon_graph.py"),
-    }
-    target_rel = pillar_map.get(pillar, "ex00_jax_soil/soil.py")
+    """Write the submitted file, run the module Oracle, restore the original."""
+    phase_dir = PHASES_DIR / PHASE_DIRS.get(phase, "C00_The_Seed")
+    files = PILLAR_FILES.get(phase, PILLAR_FILES["00"])
+    target_rel = files.get(pillar)
+    if not target_rel:
+        return {"passed": False, "output": f"Unknown pillar {pillar!r} for phase {phase!r}."}
+
     target = phase_dir / target_rel
-    
-    # Write user code (backup original? for demo we just run)
-    backup = target.read_text() if target.exists() else ""
+    grader = _grader_script(phase_dir)
+    if grader is None:
+        return {"passed": False, "output": f"No grader in {phase_dir}."}
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+    backup = target.read_text() if target.exists() else None
     try:
         target.write_text(code)
-        # Invoke like grademe (cd + pixi run). This may be slow; real = pre-warmed worker.
         result = subprocess.run(
-            ["./grademe.sh"],
+            [f"./{grader.name}"],
             cwd=str(phase_dir),
-            capture_output=True, text=True, timeout=30
+            capture_output=True,
+            text=True,
+            timeout=90,
         )
-        output = result.stdout + result.stderr
+        output = (result.stdout or "") + (result.stderr or "")
         passed = "✅ PASS" in output and "❌ FAIL" not in output
-        return {"passed": passed, "output": output[:2000]}
+        return {"passed": passed, "output": output[-2000:]}
+    except subprocess.TimeoutExpired:
+        return {"passed": False, "output": "Oracle timed out after 90s."}
     finally:
-        if backup:
+        if backup is None:
+            if target.exists():
+                target.unlink()
+        else:
             target.write_text(backup)
 
+
 def ai_oracle_review(phase: str, pillar: str, code: str, auto_result: dict) -> str:
-    """Gemini layer on top of auto. This is a real LLM call in the deployed path."""
     prompt = f"""Phase {phase} {pillar} submission.
 Auto Oracle result: {auto_result}
 Student code (first 1500 chars):
 {code[:1500]}
 
-As the Oracle of Fangorn, give strict, encouraging feedback in 1-2 paragraphs. Point out exact math issues vs the spec in SUBJECT.md. Suggest one next micro-exercise. End with a lore quote."""
-    return call_gemini(prompt, system="You are the ancient, no-nonsense Oracle of Fangorn. Never give full solutions on first try.")
+As the Oracle of Fangorn, give strict, encouraging feedback in 1-2 paragraphs.
+Point out exact math issues vs SUBJECT.md. Suggest one next micro-exercise.
+End with a lore quote. Never give the full solution on the first try."""
+    return call_gemini(
+        prompt,
+        system="You are the ancient, no-nonsense Oracle of Fangorn.",
+    )
+
 
 def grade_submission(phase: str, pillar: str, code: str) -> dict:
     auto = run_local_grader(phase, pillar, code)
@@ -64,5 +108,5 @@ def grade_submission(phase: str, pillar: str, code: str) -> dict:
     return {
         "auto": auto,
         "ai_feedback": ai_fb,
-        "overall": "strong" if auto.get("passed") else "needs work (AI can help)"
+        "overall": "strong" if auto.get("passed") else "needs work (AI can help)",
     }

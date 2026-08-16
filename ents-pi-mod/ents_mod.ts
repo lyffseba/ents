@@ -4,9 +4,9 @@ export default async function activate(pi: ExtensionAPI) {
     pi.registerCommand('ents-grade', async (args) => {
         const level = args[0] || "00";
         const levelDirs: Record<string, string> = {
-            "00": "ents/max_env/phases/00_The_Seed",
-            "01": "ents/max_env/phases/01_The_Enting",
-            "02": "ents/max_env/phases/02_The_Lexicon"
+            "00": "max_env/phases/C00_The_Seed",
+            "01": "max_env/phases/C01_The_Enting",
+            "02": "max_env/phases/C02_The_Lexicon"
         };
         
         const targetDir = levelDirs[level];
