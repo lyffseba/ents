@@ -54,11 +54,11 @@ Your goal in this module is simple: find the row of numbers for Token ID `2`.
 ---
 
 ## Chapter III
-### Exercise 01b: lore_roots
+### Exercise 02: lore_roots
 
-| Exercise 01b | |
+| Exercise 02 | |
 | :--- | :--- |
-| **Turn-in directory** | `ex01_max_roots/` |
+| **Turn-in directory** | `ex02_max_roots/` |
 | **Files to turn in** | `roots.py` |
 | **Allowed functions** | `max.engine.InferenceSession`, `max.graph.Graph`, `max.graph.ops.gather`, `print` |
 
@@ -70,11 +70,11 @@ Your goal in this module is simple: find the row of numbers for Token ID `2`.
 ---
 
 ## Chapter IV
-### Exercise 02: lore_sprout
+### Exercise 03: lore_sprout
 
-| Exercise 02 | |
+| Exercise 03 | |
 | :--- | :--- |
-| **Turn-in directory** | `ex02_mojo_sprout/` |
+| **Turn-in directory** | `ex03_mojo_sprout/` |
 | **Files to turn in** | `sprout.mojo` |
 | **Allowed functions** | `List`, `print` |
 

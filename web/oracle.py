@@ -24,14 +24,14 @@ PILLAR_FILES = {
     "00": {
         "jax": "ex00_jax_soil/soil.py",
         "mlx": "ex01_mlx_branch/branch.py",
-        "max": "ex01_max_roots/roots.py",
-        "mojo": "ex02_mojo_sprout/sprout.mojo",
+        "max": "ex02_max_roots/roots.py",
+        "mojo": "ex03_mojo_sprout/sprout.mojo",
     },
     "01": {
         "jax": "ex00_jax_bigram/bigram.py",
         "mlx": "ex01_mlx_leaf/leaf.py",
-        "max": "ex01_max_bigram/bigram_graph.py",
-        "mojo": "ex02_mojo_bigram/bigram.mojo",
+        "max": "ex02_max_bigram/bigram_graph.py",
+        "mojo": "ex03_mojo_bigram/bigram.mojo",
     },
     "02": {
         "jax": "ex00_jax_lexicon/lexicon.py",
@@ -43,7 +43,7 @@ PILLAR_FILES = {
 
 
 def _grader_script(phase_dir: Path) -> Path | None:
-    for name in ("grademe.sh", "grademe.xprize.sh"):
+    for name in ("grademe.sh",):
         candidate = phase_dir / name
         if candidate.exists():
             return candidate

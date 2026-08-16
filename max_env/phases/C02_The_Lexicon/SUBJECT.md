@@ -76,4 +76,4 @@ Expected IDs: `[18, 39, 52, 45, 53, 56, 52]`
 *   Encode `Fangorn` with the same sorted-character vocabulary.
 *   Output must contain: `[18, 39, 52, 45, 53, 56, 52]`
 
-The older `ex00_atomic_gpt/` tree is leftover lore, not part of the Oracle.
+The corpus file is checked in so airplane mode does not need a download.

@@ -50,11 +50,11 @@ When an AI tries to guess the next word, it spits out raw, messy scores called "
 ---
 
 ## Chapter III
-### Exercise 01b: lore_max_bigram
+### Exercise 02: lore_max_bigram
 
-| Exercise 01b | |
+| Exercise 02 | |
 | :--- | :--- |
-| **Turn-in directory** | `ex01_max_bigram/` |
+| **Turn-in directory** | `ex02_max_bigram/` |
 | **Files to turn in** | `bigram_graph.py` |
 | **Allowed functions** | `max.engine.InferenceSession`, `max.graph.Graph`, `max.graph.ops.gather`, `max.graph.ops.softmax`, `print` |
 
@@ -65,11 +65,11 @@ When an AI tries to guess the next word, it spits out raw, messy scores called "
 ---
 
 ## Chapter IV
-### Exercise 02: lore_mojo_bigram
+### Exercise 03: lore_mojo_bigram
 
-| Exercise 02 | |
+| Exercise 03 | |
 | :--- | :--- |
-| **Turn-in directory** | `ex02_mojo_bigram/` |
+| **Turn-in directory** | `ex03_mojo_bigram/` |
 | **Files to turn in** | `bigram.mojo` |
 | **Allowed functions** | `List`, `math.exp`, `print` |
 

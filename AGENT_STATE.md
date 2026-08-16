@@ -6,7 +6,7 @@
 - **Project Goal:** Building a highly secure, standalone educational AI inference engine (`ents`) merging MLX, MAX, JAX, and Mojo, focusing on the evolutionary history of LLMs (from Bigram up to Gemma 4), themed around the **Ents of Middle-earth** 🌳.
 - **Project Scope:** `ents` is now a dual-surface repo: the core Awakening curriculum (`max_env/`) plus the XPRIZE Ents Academy web platform (`web/`), TUI (`ents-cli/`), and Pi extension (`ents-pi-mod/`).
 - **Environment:** Pixi workspace in `max_env/` with strict dependencies (`max`, `modular`, `mojo`, `jax`, `flax`, `onnx`). **Platform pin:** `osx-arm64` only (`max_env/pixi.toml`). Web app uses a separate `web/requirements.txt` venv.
-- **Latest Commit (origin before this session):** `94ced69` — *fix: make XPRIZE web demo-runnable without live Gemini* (2026-07-16). Local clone was 6 commits behind; fast-forwarded on 2026-08-16.
+- **Latest work:** PR #1 (`fix/c-prefixed-phase-paths`). Curriculum contract is `max_env/phases/CURRICULUM.md`. Exercise dirs are sequential `ex00`–`ex03`.
 
 ### Milestones Achieved (Historical)
 - Renamed all platforms (GitHub, Hugging Face) to `ents`, absorbing `gemax`, `44`, `77`, `mlx`, and `arton`.
@@ -144,11 +144,10 @@ cd max_env && ./scripts/sync.sh "your message"
 - `/health` + `/healthz`; static `.gitkeep`; local contest build docs in README.
 
 ## Session (2026-08-16)
-- Fast-forwarded local `main` `cf96b96` → `94ced69` (6 commits).
-- Hugging Face `main` synced to this line of work (`c700336` and follow-ups).
-- Honest Oracle: shared `max_env/phases/_oracle.sh`. Removed every `|| echo <expected>` cheat. Trophy requires zero FAILs.
-- Scaffolded MLX for C00 (`ex01_mlx_branch`) and C01 (`ex01_mlx_leaf`). Added `mlx` to `pixi.toml`.
-- C02 is a real Four-Pillar module with `SUBJECT.md` + `grademe.sh`. Tokenizer no longer uses `builtins.exec`.
-- `web/oracle.py` maps all four pillars and prefers `grademe.sh`.
-- `ents-cli` watches `current_level`; `max_env/play.py` is a launcher into the CLI.
-- Docs (README / ARCHITECTURE / AGENT_STATE) now match filesystem names. C03/C04 still unwritten.
+- Fast-forwarded local `main` `cf96b96` → `94ced69`, then this PR.
+- Honest Oracle (`_oracle.sh`). Relocated `modular.cfg` is rewritten so Mojo finds `std`.
+- MAX uses `max.graph` (ONNX rejected by this nightly). Mojo C00/C01 use `List`; C02 encodes Fangorn without `exec`.
+- Sequential dirs: `ex00` JAX, `ex01` MLX, `ex02` MAX, `ex03` Mojo. Deleted leftover `ex00_atomic_gpt` and `grademe.xprize.sh`.
+- C01 JAX now builds the 3x3 transition matrix and softmaxes row 1, matching SUBJECT.md.
+- C05 SUBJECT says the module is unwritten. Contract: `max_env/phases/CURRICULUM.md`.
+- MLX still skipped: MAX nightly is CPython 3.14; MLX wheels stop at 3.13.

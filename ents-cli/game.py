@@ -132,15 +132,15 @@ A computer cannot read the letter 'A'. It only understands numbers. A Tokenizer 
         0: {
             "jax": "max_env/phases/C00_The_Seed/ex00_jax_soil/soil.py",
             "mlx": "max_env/phases/C00_The_Seed/ex01_mlx_branch/branch.py",
-            "max": "max_env/phases/C00_The_Seed/ex01_max_roots/roots.py",
-            "mojo": "max_env/phases/C00_The_Seed/ex02_mojo_sprout/sprout.mojo",
+            "max": "max_env/phases/C00_The_Seed/ex02_max_roots/roots.py",
+            "mojo": "max_env/phases/C00_The_Seed/ex03_mojo_sprout/sprout.mojo",
             "grade_dir": "max_env/phases/C00_The_Seed",
         },
         1: {
             "jax": "max_env/phases/C01_The_Enting/ex00_jax_bigram/bigram.py",
             "mlx": "max_env/phases/C01_The_Enting/ex01_mlx_leaf/leaf.py",
-            "max": "max_env/phases/C01_The_Enting/ex01_max_bigram/bigram_graph.py",
-            "mojo": "max_env/phases/C01_The_Enting/ex02_mojo_bigram/bigram.mojo",
+            "max": "max_env/phases/C01_The_Enting/ex02_max_bigram/bigram_graph.py",
+            "mojo": "max_env/phases/C01_The_Enting/ex03_mojo_bigram/bigram.mojo",
             "grade_dir": "max_env/phases/C01_The_Enting",
         },
         2: {
@@ -251,10 +251,6 @@ A computer cannot read the letter 'A'. It only understands numbers. A Tokenizer 
         cwd = os.path.join(base_dir, grade_dir)
         script_name = "grademe.sh"
         script_path = os.path.join(cwd, script_name)
-        if not os.path.exists(script_path):
-            script_name = "grademe.xprize.sh"
-            script_path = os.path.join(cwd, script_name)
-
         if not os.path.exists(script_path):
             log.write_line("❌ Oracle says: Grading script not found!")
             return

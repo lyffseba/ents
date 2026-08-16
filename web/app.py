@@ -128,11 +128,11 @@ async def download_workspace(phase: str):
     """Download clean student workspace for local Oracle (grademe.sh + pixi). This + web tutor = hybrid strength."""
     base = PyPath(__file__).parent.parent / "max_env" / "phases"
     phase_map = {
-        "00": "C00_The_Seed" if (base / "C00_The_Seed").exists() else "00_The_Seed",
-        "01": "C01_The_Enting" if (base / "C01_The_Enting").exists() else "01_The_Enting",
-        "02": "C02_The_Lexicon" if (base / "C02_The_Lexicon").exists() else "02_The_Lexicon",
+        "00": "C00_The_Seed",
+        "01": "C01_The_Enting",
+        "02": "C02_The_Lexicon",
     }
-    pdir = base / phase_map.get(phase, "00_The_Seed")
+    pdir = base / phase_map.get(phase, "C00_The_Seed")
     if not pdir.exists():
         raise HTTPException(404, "Phase not ready")
     # Zip the ex* + grademe + SUBJECT (students edit copies)

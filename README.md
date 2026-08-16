@@ -66,7 +66,7 @@ For every module, you must write code for all four paradigms. You cannot progres
 ---
 
 ## 🗺️ The Curriculum
-Your journey takes place inside the `max_env/phases/` directory. Start at Chapter 00.
+Your journey takes place inside the `max_env/phases/` directory. The path contract is [`CURRICULUM.md`](max_env/phases/CURRICULUM.md). Start at Chapter 00.
 
 *   👉 [**C00 - The Seed**](max_env/phases/C00_The_Seed/SUBJECT.md): Embeddings across JAX, MLX, MAX, Mojo.
 *   👉 [**C01 - The Enting**](max_env/phases/C01_The_Enting/SUBJECT.md): Softmax / bigram across all four pillars.
