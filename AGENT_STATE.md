@@ -5,8 +5,8 @@
 
 - **Project Goal:** Building a highly secure, standalone educational AI inference engine (`ents`) merging MLX, MAX, JAX, and Mojo, focusing on the evolutionary history of LLMs (from Bigram up to Gemma 4), themed around the **Ents of Middle-earth** 🌳.
 - **Project Scope:** `ents` is now a dual-surface repo: the core Awakening curriculum (`max_env/`) plus the XPRIZE Ents Academy web platform (`web/`), TUI (`ents-cli/`), and Pi extension (`ents-pi-mod/`).
-- **Environment:** Pixi workspace in `max_env/` with strict dependencies (`max`, `modular`, `mojo`, `jax`, `flax`, `onnx`). **Platform pin:** `osx-arm64` only (`max_env/pixi.toml`). Web app uses a separate `web/requirements.txt` venv.
-- **Latest work:** PR #1 (`fix/c-prefixed-phase-paths`). Curriculum contract is `max_env/phases/CURRICULUM.md`. Exercise dirs are sequential `ex00`–`ex03`.
+- **Environment:** Pixi workspace in `max_env/` on the **stable Modular channel**: Mojo **1.0.0**, MAX **26.5.0**, Python **3.13**, MLX **0.29.3** (PyPI). Platform: `osx-arm64`. Web app uses a separate `web/requirements.txt` venv.
+- **Latest work:** Four Pillars now grade 4/4 on C00–C02 after the 26.5 upgrade. Curriculum contract: `max_env/phases/curriculum.json`.
 
 ### Milestones Achieved (Historical)
 - Renamed all platforms (GitHub, Hugging Face) to `ents`, absorbing `gemax`, `44`, `77`, `mlx`, and `arton`.
@@ -151,4 +151,4 @@ cd max_env && ./scripts/sync.sh "your message"
 - C01 JAX now builds the 3x3 transition matrix and softmaxes row 1, matching SUBJECT.md.
 - C05 SUBJECT says the module is unwritten. Contract: `max_env/phases/curriculum.json` (+ CURRICULUM.md).
 - CLI remounts action buttons after Enter Fangorn (was stuck on intro). Web Oracle grades one pillar via `GRADE_PILLAR`.
-- MLX still skipped: MAX nightly is CPython 3.14; MLX wheels stop at 3.13.
+- **Modular 26.5 / Mojo 1.0 (2026-08-16):** left `max-nightly` for `https://conda.modular.com/max`. Dropped retired `modular` metapackage. Pinned Python 3.13 so MLX installs. C00/C01/C02 now **4 pass, 0 fail, 0 skip**. Mojo exercises use `std.math` / `std.pathlib` / `def` (no `fn`).

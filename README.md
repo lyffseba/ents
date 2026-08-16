@@ -38,7 +38,7 @@ This repository is designed to be completely offline-capable. If you are about t
    ```bash
    curl -fsSL https://pixi.sh/install.sh | bash
    ```
-2. **Download the offline environment** (This fetches JAX, Mojo, and Modular MAX):
+2. **Download the offline environment** (Mojo 1.0, MAX 26.5, JAX, MLX):
    ```bash
    cd max_env
    pixi install

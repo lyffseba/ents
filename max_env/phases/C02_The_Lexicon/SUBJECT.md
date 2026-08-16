@@ -70,7 +70,7 @@ Expected IDs: `[18, 39, 52, 45, 53, 56, 52]`
 | :--- | :--- |
 | **Turn-in directory** | `ex03_mojo_lexicon/` |
 | **Files to turn in** | `tokenizer.mojo` |
-| **Allowed functions** | `Path`, `List`, `print` (no Python interop, no `exec`) |
+| **Allowed functions** | `std.pathlib.Path`, `List`, `print` (no Python interop, no `exec`) |
 
 *   Read `input.txt` in this directory.
 *   Encode `Fangorn` with the same sorted-character vocabulary.

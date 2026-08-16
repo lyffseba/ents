@@ -1,4 +1,4 @@
-import math
+from std import math
 
 
 def main():

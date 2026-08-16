@@ -71,7 +71,7 @@ When an AI tries to guess the next word, it spits out raw, messy scores called "
 | :--- | :--- |
 | **Turn-in directory** | `ex03_mojo_bigram/` |
 | **Files to turn in** | `bigram.mojo` |
-| **Allowed functions** | `List`, `math.exp`, `print` |
+| **Allowed functions** | `List`, `std.math.exp`, `print` |
 
 *   Manually compute a numerically stable softmax of `[-1.0, -2.0, 5.0]` in Mojo.
 *   Print the probabilities separated by commas.

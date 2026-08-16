@@ -49,7 +49,7 @@ Your goal in this module is simple: find the row of numbers for Token ID `2`.
 *   Repeat the embedding lookup on Apple Silicon with MLX.
 *   Same 3x4 weights and token ID `2` as the JAX soil.
 *   Output must contain: `[ 0.5 -0.2  0.8  0.1]` (or the comma-separated form).
-*   On Linux the Oracle skips this pillar.
+*   Requires the Pixi env (Python 3.13 + `mlx`). The Oracle skips this pillar if `import mlx` fails.
 
 ---
 

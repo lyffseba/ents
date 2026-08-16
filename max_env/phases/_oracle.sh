@@ -114,7 +114,7 @@ oracle_mlx_or_skip() {
         return 0
     fi
     if ! oracle_has_mlx; then
-        oracle_skip "$name" "mlx not importable in this Pixi env (MAX nightly is CPython 3.14; MLX wheels stop at 3.13)"
+        oracle_skip "$name" "mlx not importable in this Pixi env"
         return 0
     fi
     local got

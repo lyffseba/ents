@@ -1,7 +1,7 @@
-from pathlib import Path
+from std.pathlib import Path
 
 
-fn encode_fangorn(text: String) -> String:
+def encode_fangorn(text: String) -> String:
     # Tiny Shakespeare is ASCII: unique bytes == unique characters.
     var bytes = text.as_bytes()
     var seen = List[Int]()
