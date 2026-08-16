@@ -1,7 +1,4 @@
-"""
-ents.mojo - The Mojo equivalent of Karpathy's llm.c
-Here we build the inference engine from the ground up using Modular's MAX and Mojo.
-"""
+"""Ents Mojo hello. Curriculum kernels live under phases/, not here."""
 
 def main():
     print("=========================================")

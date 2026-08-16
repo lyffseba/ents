@@ -65,7 +65,7 @@ Your goal in this module is simple: find the row of numbers for Token ID `2`.
 *   Compile the same embedding lookup as a MAX Graph (`ops.gather` over the 3x4 table).
 *   Execute it with input `[2]`.
 *   Output format must contain: `[[ 0.5 -0.2  0.8  0.1]]`
-*   Current MAX nightlies do **not** load ONNX. Do not submit an `.onnx` file.
+*   MAX 26.5 does **not** load student ONNX. Build a `max.graph` gather. Do not submit an `.onnx` file.
 
 ---
 

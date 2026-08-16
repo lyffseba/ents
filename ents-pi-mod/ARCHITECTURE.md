@@ -21,7 +21,7 @@ Instead of manually navigating to the phase folder and running `grademe.sh`, the
 ### 2. Environment Tools
 Pi needs tools to effectively navigate the four pillars:
 - `ents_run_mojo`: A tool to compile and run `.mojo` files through the pixi environment.
-- `ents_build_max_graph`: A tool to trigger ONNX graph generation for MAX models.
+- `ents_build_max_graph`: A tool to run a `max.graph` exercise through Pixi.
 - `ents_run_mlx`: A tool specifically for Apple Silicon execution with proper environment variables.
 
 ### 3. File Protection (Event Interception)

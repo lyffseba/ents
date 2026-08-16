@@ -1,154 +1,49 @@
-# 🤖 Ents - The Memory Crystal (Continuous Development State)
-> *This file is the literal "brain" and memory state between AI coding sessions across different machines or agents.*
+# Ents — Memory Crystal
 
-## Current Status (2026-08-16)
+Read this first on a new machine. Update it when the stack or the curriculum contract changes.
 
-- **Project Goal:** Building a highly secure, standalone educational AI inference engine (`ents`) merging MLX, MAX, JAX, and Mojo, focusing on the evolutionary history of LLMs (from Bigram up to Gemma 4), themed around the **Ents of Middle-earth** 🌳.
-- **Project Scope:** `ents` is now a dual-surface repo: the core Awakening curriculum (`max_env/`) plus the XPRIZE Ents Academy web platform (`web/`), TUI (`ents-cli/`), and Pi extension (`ents-pi-mod/`).
-- **Environment:** Pixi workspace in `max_env/` on the **stable Modular channel**: Mojo **1.0.0**, MAX **26.5.0**, Python **3.13**, MLX **0.29.3** (PyPI). Platform: `osx-arm64`. Web app uses a separate `web/requirements.txt` venv.
-- **Latest work:** Four Pillars now grade 4/4 on C00–C02 after the 26.5 upgrade. Curriculum contract: `max_env/phases/curriculum.json`.
+## Now (2026-08-16)
 
-### Milestones Achieved (Historical)
-- Renamed all platforms (GitHub, Hugging Face) to `ents`, absorbing `gemax`, `44`, `77`, `mlx`, and `arton`.
-- Absorbed legacy atomic tokenizer and data pipelines into `C02_The_Lexicon`.
-- Absorbed legacy production Gemma deployment into `C05_The_Entmoot`.
-- Implemented C00 (The Seed) and C01 (The Enting) with JAX, MAX, and Mojo solutions plus Oracle graders (`grademe.sh`).
-- Implemented strict security policies and sandboxing via `.gitignore` and `SECURITY.md`.
-- Prototyped `ents-cli` RPG game using Textual (`cf96b96`).
+- **Stack:** Pixi in `max_env/` on the **stable** Modular channel.
+  - Mojo **1.0.0**
+  - MAX **26.5.0**
+  - Python **3.13**
+  - MLX **0.29** (PyPI)
+  - Platform: `osx-arm64` only
+- **Curriculum contract:** `max_env/phases/curriculum.json` (human copy: `CURRICULUM.md`)
+- **Phases that grade 4/4:** C00 Seed, C01 Enting, C02 Lexicon (JAX + MLX + MAX + Mojo)
+- **Not written:** C03 Self-Attention, C04 GPT-2. **C05** is an admitted stub.
+- **Surfaces:** `ents-cli/game.py` TUI, `web/` Academy (demo mode without Gemini), `ents-pi-mod/`
+- **Git:** GitHub `main` is PR-protected. Hugging Face `hf` is a dataset remote.
 
-### Today's Session Summary (2026-06-02)
+## Grade
 
-#### 1. Environment & Status Checks
-
-| Check | Script / Command | Purpose | Result |
-|-------|------------------|---------|--------|
-| MAX inference session | `pixi run python src/check_engine.py` | Verify Modular MAX can scan and load devices | **Apple Silicon:** `driver.scan_available_devices()` → GPU device loads; session created. **Intel Mac:** N/A — Pixi env cannot install (see architecture note below). |
-| C00 Oracle | `cd max_env/phases/C00_The_Seed && ./grademe.sh` | Grade JAX / MAX / Mojo ex00–ex02 | **PASS** on Apple Silicon host after Mojo rewrite |
-| C01 Oracle | `cd max_env/phases/C01_The_Enting && ./grademe.sh` | Grade JAX / MAX / Mojo ex00–ex02 | **PASS** on Apple Silicon host; grader tolerance widened for float formatting |
-| Remote sync | `git push github main` | Publish code to `lyffseba/ents` | **SUCCESS** — `github/main` @ `37b4646` |
-
-**Note:** Hugging Face remote (`origin` / `hf`) may lag GitHub by one commit until `git push hf main` or `max_env/scripts/sync.sh` is run.
-
-#### 2. Intel vs Apple Silicon — Architectural Compatibility
-
-This is a **hard platform constraint**, not a bug:
-
-| Aspect | Apple Silicon (`osx-arm64`) | Intel Mac (`osx-64` / x86_64) |
-|--------|----------------------------|-------------------------------|
-| **Pixi platform** | ✅ Supported (`platforms = ["osx-arm64"]`) | ❌ Unsupported — `pixi install` resolves zero packages |
-| **Modular MAX / Mojo** | ✅ Nightly builds from `conda.modular.com/max-nightly` | ❌ No published conda artifacts for Intel macOS |
-| **MLX pillar** | ✅ Native unified-memory GPU path | ❌ MLX is Apple Silicon only |
-| **JAX in pixi env** | ✅ `jaxlib` arm64 CPU build | ❌ Not in lockfile for x86 |
-| **Agent / CI hosts** | Can run `mojo`, `grademe.sh`, `check_engine.py` | Can **edit** `.mojo` / Python sources; **cannot execute** the Modular stack locally |
-| **Rosetta** | N/A (native arm64) | Running arm64 binaries under Rosetta does **not** provide Modular MAX/Mojo — still need arm64 pixi env |
-
-**Practical rule for multi-machine agents:**
-- **Author & commit** Mojo/MAX code on any machine.
-- **Grade & run** only on an Apple Silicon Mac with `cd max_env && pixi install`.
-- `check_engine.py` documents that on Apple Silicon, MAX reports the accelerator as `'gpu'` (Metal).
-
-#### 3. C00 / C01 Mojo — Stub → Production Transition
-
-Both exercises previously used **hardcoded `print()` strings** that matched grader expected output without performing real computation. They are now **production-ready dynamic implementations** aligned with JAX ground truth.
-
-##### C00 — `ex02_mojo_sprout/sprout.mojo` (The Seed / Embedding)
-
-**Before:** `print("0.5, -0.2, 0.8, 0.1")` (static stub)
-
-**After:**
-- Builds a **3×4** `Tensor[DType.float32]` with weights identical to `ex00_jax_soil/soil.py`
-- Uses **row-major** layout; selects row index `2` via bare-metal memory:
-  - `comptime cols = 4`, `comptime row = 2`
-  - `var ptr = weights.unsafe_ptr()`
-  - Reads `ptr[row_offset + 0..3]` where `row_offset = row * cols`
-- Prints **computed** values: `0.5, -0.2, 0.8, 0.1`
-- **Allowed APIs:** `Tensor`, `print` only (per `SUBJECT.md`)
-
-##### C01 — `ex02_mojo_bigram/bigram.mojo` (The Enting / Softmax)
-
-**Before:** Partial tensor setup but **hardcoded** probability string `print("0.002428, 0.000893, 0.996678")`; `max_val` was a constant `5.0` instead of computed.
-
-**After:**
-- `fn main()` (consistent with C00 style)
-- Logits `[-1.0, -2.0, 5.0]` in `Tensor[DType.float32](3)`
-- **Numerically stable softmax:**
-  1. Dynamic `max_val` via loop over logits
-  2. `exps[i] = math.exp(logits[i] - max_val)` accumulated into `sum_exp`
-  3. `probs[i] = exps[i] / sum_exp` stored in `Tensor`, then printed
-- **Allowed APIs:** `Tensor`, `math.exp`, `print` only
-- Output is **computed**, e.g. `0.002428, 0.000893, 0.996678` (matches `jax.nn.softmax` on ground truth)
-
-##### C01 Grader Update — `phases/C01_The_Enting/grademe.sh`
-
-- Removed fallback `|| echo "0.002428, 0.000893, 0.996678"` that masked Mojo failures
-- Added tolerance for alternate float formats (scientific notation, rounding): `0.002470`, `2.470376e-03`, etc.
-- Added diagnostic line on FAIL showing expected vs actual output
-
-#### 4. Repository Sync (2026-06-02)
-
-| Remote | URL | Branch @ sync | Status |
-|--------|-----|---------------|--------|
-| **github** | `https://github.com/lyffseba/ents.git` | `main` → `37b4646` | ✅ **Pushed today** |
-| **hf / origin** | `https://huggingface.co/datasets/lyffseba/ents` | May be 1 commit behind | Run `git push hf main` to align |
-
-**Sync commands:**
 ```bash
-# GitHub (lyffseba/ents)
-git push github main
-
-# Hugging Face datasets repo
-git push hf main
-
-# Both (from max_env/scripts/sync.sh — uses origin for HF)
-cd max_env && ./scripts/sync.sh "your message"
+cd max_env && pixi install
+../max_env/phases/C00_The_Seed/grademe.sh
+../max_env/phases/C01_The_Enting/grademe.sh
+../max_env/phases/C02_The_Lexicon/grademe.sh
+./scripts/test_curriculum.py
+./scripts/test_oracle_honest.sh
+./scripts/test_cli_actions.py   # needs textual in .venv
 ```
 
-## Four Pillars Progress (C00 & C01)
+Expect **4 pass, 0 fail, 0 skip** on C00–C02 after `pixi install`.
 
-| Phase | JAX (Ground Truth) | MAX (Graph) | Mojo (Bare Metal) | MLX |
-|-------|-------------------|-------------|-------------------|-----|
-| **C00 The Seed** | ✅ `soil.py` | ✅ `roots.py` + ONNX | ✅ **Production** `sprout.mojo` | 🔜 Not scaffolded |
-| **C01 The Enting** | ✅ `bigram.py` | ✅ `bigram_graph.py` | ✅ **Production** `bigram.mojo` | 🔜 Not scaffolded |
+## Rules that must stay true
 
-## 🚀 NEXT STEPS FOR THE ACTIVE AGENT
+- Exercise dirs: `ex00` JAX, `ex01` MLX, `ex02` MAX, `ex03` Mojo.
+- Graders never `echo` the expected answer on failure.
+- MAX exercises use `max.graph`, not ONNX.
+- Mojo 1.0: `def` not `fn`; import `std.math` / `std.pathlib`.
+- MLX skip is only allowed when `import mlx` fails. On this pin it must pass.
+- `_oracle.sh` rewrites relocated `modular.cfg` so Mojo can find `std`.
 
-1. **Sync remotes after this session:** push `origin` + `hf` so Hugging Face is no longer stuck at `cf96b96`.
-2. **MLX Integration:** Scaffold MLX implementations for C00 and C01 (Fourth Pillar still missing in phases 00–01). MLX is still absent from `pixi.toml`.
-3. **Honest graders:** C00 MAX and C02 MAX/Mojo still `echo` expected output on failure. Remove those fallbacks.
-4. **C03 The Sapling:** Self-Attention module is still missing. Architecture.md numbering still disagrees with filesystem C02=Lexicon.
-5. **XPRIZE live path:** GEMINI_API_KEY, Stripe, Cloud Run URL, 3-min video. Demo mode works without keys.
+## Next (real work, not docs)
 
----
-*Agent Instructions:* When starting a new session on any machine, read this file FIRST to instantly understand where the project left off and regain full context. When completing a task, you MUST update the "Current Status" and "Next Steps" sections accordingly before terminating your session or handing off to another agent.
-
-**Handoff checklist:**
-- [ ] Confirm host architecture (`uname -m` → `arm64` required to run graders)
-- [ ] `cd max_env && pixi install` (Apple Silicon only)
-- [ ] Run `./grademe.sh` in C00 and C01 before claiming Mojo changes pass
-- [ ] Push to both `github` and `hf` after substantive commits
+1. C03 The Sapling — self-attention, Four Pillars, same Oracle format.
+2. Stop treating leftover GPT-2 ONNX (`scripts/download_gpt2.py`) as if MAX still loads it.
+3. C05 is not production until it loads a real model.
 
 ---
-
-## XPRIZE layer (rebased onto origin/main 2026-07-16)
-
-- **Product surface:** `web/` FastAPI + HTMX (landing, dashboard, lab, tutor, ops, pricing, judges)
-- **Agents:** retention, content, scheduler under `web/agents/` with Gemini call logging
-- **Evidence:** `scripts/export_revenue.py`, `scripts/seed_demo.py`, `SUBMISSION.md`, `VIDEO_SCRIPT.md`, `devpost_submission_text.txt`
-- **CLI:** `ents-cli/game.py` TUI RPG; `ents-pi-mod/` pi extension
-- **Env template:** `.env.example`
-- **Next:** live GEMINI_API_KEY, Stripe, Cloud Run deploy, real users/revenue, record 3min video
-
-## Polish (2026-07-16)
-- Fixed `web/app.py` config imports (`get_gemini_key`, `USE_VERTEX`).
-- Phase download maps to `C00`/`C01`/`C02` dirs when present.
-- `/health` + `/healthz`; static `.gitkeep`; local contest build docs in README.
-
-## Session (2026-08-16)
-- Fast-forwarded local `main` `cf96b96` → `94ced69`, then this PR.
-- Honest Oracle (`_oracle.sh`). Relocated `modular.cfg` is rewritten so Mojo finds `std`.
-- MAX uses `max.graph` (ONNX rejected by this nightly). Mojo C00/C01 use `List`; C02 encodes Fangorn without `exec`.
-- Sequential dirs: `ex00` JAX, `ex01` MLX, `ex02` MAX, `ex03` Mojo. Deleted leftover `ex00_atomic_gpt` and `grademe.xprize.sh`.
-- C01 JAX now builds the 3x3 transition matrix and softmaxes row 1, matching SUBJECT.md.
-- C05 SUBJECT says the module is unwritten. Contract: `max_env/phases/curriculum.json` (+ CURRICULUM.md).
-- CLI remounts action buttons after Enter Fangorn (was stuck on intro). Web Oracle grades one pillar via `GRADE_PILLAR`.
-- **Modular 26.5 / Mojo 1.0 (2026-08-16):** left `max-nightly` for `https://conda.modular.com/max`. Dropped retired `modular` metapackage. Pinned Python 3.13 so MLX installs. C00/C01/C02 now **4 pass, 0 fail, 0 skip**. Mojo exercises use `std.math` / `std.pathlib` / `def` (no `fn`).
+When you finish a session: update **Now**, **Grade** results if they changed, and **Next**. Do not append another diary.

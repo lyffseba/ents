@@ -13,7 +13,7 @@ This repository is designed as an **End-to-End Educational Journey** for AI engi
 2. **MLX (The Silicon Optimization):**
    - Used to write highly parallelized, memory-efficient implementations optimized specifically for Apple's unified memory architecture.
 3. **Modular MAX (The Graph Engine):**
-   - Used to compile high-level ONNX/PyTorch models directly to hardware to serve as our baseline performance metric.
+   - Used to build and compile `max.graph` programs (gather, softmax, identity). MAX 26.5 does not take student ONNX as input.
 4. **Mojo (The "llm.c" / "Rust" Layer):**
    - This is where the magic happens. We will write our custom tensors, memory management, and attention kernels in raw Mojo. This gives us C/Rust-level performance with Pythonic syntax.
 
@@ -33,7 +33,7 @@ Filesystem names (`C00_The_Seed`, …) are the source of truth. Older docs that 
 For every Phase, the workflow is:
 1. **Extract & Verify (JAX):** Load/build the model mathematically and establish the "ground truth" numbers.
 2. **Optimize (MLX):** Write the algorithm targeting Apple Silicon.
-3. **Compile & Run (MAX):** Export the model to ONNX, feed it into MAX, and establish the baseline performance speed.
+3. **Compile & Run (MAX):** Build a `max.graph.Graph`, `InferenceSession.load` it, execute, print.
 4. **Build from Scratch (Mojo):** Write the underlying C-level math operations by hand in `.mojo` files to match the ground truth outputs while aiming to beat the MAX baseline speeds.
 
 ## Syncing Strategy

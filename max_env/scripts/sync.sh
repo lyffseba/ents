@@ -1,26 +1,20 @@
 #!/usr/bin/env bash
-# Syncs the current workspace to both GitHub and Hugging Face
+# Push the current branch to Hugging Face. GitHub main is PR-protected.
+set -euo pipefail
+cd "$(dirname "$0")/../.."
 
-echo "🚀 Synchronizing Ents to GitHub and Hugging Face..."
-
-# Ensure we are tracking all new files
-git add .
-
-# Prompt for commit message if not provided
-if [ -z "$1" ]; then
-    read -p "Enter commit message: " msg
+branch="$(git rev-parse --abbrev-ref HEAD)"
+echo "📦 Hugging Face: pushing ${branch} -> hf/main"
+if [[ "$branch" == "main" ]]; then
+    git push hf main
 else
-    msg="$1"
+    git push hf "${branch}:main"
 fi
 
-git commit -m "$msg"
-
-# 1. Push to Hugging Face (Always works via our token)
-echo "📦 Pushing to Hugging Face..."
-git push hf main
-
-# 2. Push to GitHub
-echo "🐙 Pushing to GitHub..."
-git push origin main || echo "⚠️ GitHub push failed (check your local credentials/403 error). HF push was successful!"
-
-echo "✅ Sync complete!"
+echo "🐙 GitHub: origin/${branch} (will not force main)"
+if [[ "$branch" == "main" ]]; then
+    echo "GitHub main is PR-protected. Open a branch + pull request."
+    exit 1
+fi
+git push -u origin "$branch"
+echo "✅ Remotes updated. Open a PR to land on GitHub main."
