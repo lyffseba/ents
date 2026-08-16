@@ -58,7 +58,7 @@ There is no hand-holding. You will be given a specific mathematical goal, strict
 To truly understand how AI works, you must master the **"Four Pillars"**:
 1. 🧮 **JAX (The Math):** You will first write the raw math in Python. This is the theoretical ground truth.
 2. 🍎 **MLX (The Silicon):** You will optimize the math specifically for Apple Silicon architecture.
-3. 🕸️ **MAX (The Graph):** You will compile that math into a computational graph (ONNX) and run it through Modular's high-speed AI engine.
+3. 🕸️ **MAX (The Graph):** You will build a `max.graph` program and run it through Modular MAX 26.5.
 4. 🦀 **Mojo (The Bare Metal):** Finally, you will rewrite the operation in bare-metal Mojo, directly manipulating memory and pointers to achieve C-level speed.
 
 For every module, you must write code for all four paradigms. You cannot progress until the automated grader (the `Oracle of Fangorn`) gives you a green `✅ PASS`.
