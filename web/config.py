@@ -49,8 +49,10 @@ def get_gemini_key() -> str:
 
 # --- System 1 decision bus (web/system1) ---
 # Empty SYSTEM1_BACKEND prefers local Laya, then the mock heuristic if weights
-# or the package are missing. OPENROUTER_API_KEY serves Jev and System 2 drafts.
-# Demo mode leaves both keys empty. See README "System 1 decision bus".
+# or the package are missing. OPENROUTER_API_KEY serves Jev (System 1) and
+# chat drafts (System 2). Without that key, Jev falls back to the mock and
+# escalations skip OpenRouter. Demo mode leaves both keys empty.
+# See README "System 1 decision bus".
 
 def system1_backend_setting() -> str:
     """``laya``, ``openrouter_jev``, ``mock``, or ``""`` (prefer local Laya)."""
@@ -89,7 +91,8 @@ def system1_jev_model() -> str:
 
 
 def system2_model() -> str:
-    return os.getenv("SYSTEM2_MODEL", "openai/gpt-4o-mini").strip() or "openai/gpt-4o-mini"
+    """Chat model for escalations. Default is OpenRouter's free-model router."""
+    return os.getenv("SYSTEM2_MODEL", "openrouter/free").strip() or "openrouter/free"
 
 
 def openrouter_decisions_url() -> str:

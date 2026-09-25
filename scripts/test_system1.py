@@ -6,11 +6,13 @@ backend, confidence gating, and the tutor plus retention flows.
 """
 from __future__ import annotations
 
+import json
 import os
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -28,6 +30,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 from web.app import app  # noqa: E402
 from web import deps  # noqa: E402
 from web.agents import content as content_agent  # noqa: E402
+from web.config import system1_jev_model, system2_model  # noqa: E402
 from web.system1.backends import laya_importable, predict, reset_backend_state  # noqa: E402
 from web.system1.flows import tutor_state  # noqa: E402
 from web.system1.gate import classify_route  # noqa: E402
@@ -79,12 +82,20 @@ class _EnvGuard(unittest.TestCase):
                 "OPENROUTER_API_KEY",
                 "SYSTEM1_HIGH_CONFIDENCE",
                 "SYSTEM1_NEEDS_GENERATION",
+                "SYSTEM1_JEV_MODEL",
+                "SYSTEM2_MODEL",
+                "OPENROUTER_DECISIONS_URL",
+                "OPENROUTER_CHAT_URL",
             )
         }
         os.environ["SYSTEM1_BACKEND"] = "mock"
         os.environ["OPENROUTER_API_KEY"] = ""
         os.environ.pop("SYSTEM1_HIGH_CONFIDENCE", None)
         os.environ.pop("SYSTEM1_NEEDS_GENERATION", None)
+        os.environ.pop("SYSTEM1_JEV_MODEL", None)
+        os.environ.pop("SYSTEM2_MODEL", None)
+        os.environ.pop("OPENROUTER_DECISIONS_URL", None)
+        os.environ.pop("OPENROUTER_CHAT_URL", None)
 
     def tearDown(self):
         reset_backend_state()
@@ -221,6 +232,267 @@ class GatedFlowTests(_EnvGuard):
         self.assertIn("flow=retention", page)
         self.assertIn("route=deterministic", page)
         self.assertIn("intervention=nudge", page)
+
+
+class _FakeResponse:
+    def __init__(self, payload, status_code=200):
+        self._payload = payload
+        self.status_code = status_code
+        self.text = json.dumps(payload)
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            import httpx
+            request = httpx.Request("POST", "https://openrouter.ai/mock")
+            response = httpx.Response(self.status_code, request=request, text=self.text)
+            raise httpx.HTTPStatusError("error", request=request, response=response)
+
+    def json(self):
+        return self._payload
+
+
+def _jev_payload():
+    """Shape captured from the OpenRouter Jev tutorial (typesafe/jev-1.13)."""
+    return {
+        "id": "gen-dec-test",
+        "model": "typesafe/jev-1.13-20260917",
+        "provider": "TypeSafe",
+        "answers": {
+            "department": {
+                "type": "choice",
+                "choice": "billing",
+                "confidence": 0.91,
+                "probabilities": {"billing": 0.94, "technical": 0.06},
+            },
+            "urgency": {
+                "type": "score",
+                "score": 1.4,
+                "confidence": 0.8,
+                "probabilities": {"0": 0.1, "1": 0.4, "2": 0.5},
+            },
+            "needs_generation": {"type": "noul", "noul": 0.12},
+        },
+        "usage": {"input_tokens": 120, "output_tokens": 40, "cost": 0.00001},
+    }
+
+
+def _chat_payload(text="A drafted hint about shapes."):
+    return {
+        "id": "gen-chat-test",
+        "model": "some-vendor/model:free",
+        "choices": [{"message": {"role": "assistant", "content": text}}],
+    }
+
+
+class OpenRouterBackendTests(_EnvGuard):
+    def test_default_models_pin_jev_and_the_free_router(self):
+        self.assertEqual(system1_jev_model(), "typesafe/jev-1.13")
+        self.assertEqual(system2_model(), "openrouter/free")
+
+    def test_jev_posts_decisions_and_normalizes_typed_answers(self):
+        os.environ["SYSTEM1_BACKEND"] = "openrouter_jev"
+        os.environ["OPENROUTER_API_KEY"] = "sk-or-test"
+        captured = {}
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            captured["url"] = url
+            captured["headers"] = headers
+            captured["json"] = json
+            captured["timeout"] = timeout
+            return _FakeResponse(_jev_payload())
+
+        with patch("httpx.post", side_effect=fake_post) as mocked:
+            result = predict("Please refund the duplicate invoice payment", _BILLING)
+
+        self.assertEqual(mocked.call_count, 1)
+        self.assertEqual(captured["url"], "https://openrouter.ai/api/alpha/decisions")
+        self.assertEqual(captured["headers"]["Authorization"], "Bearer sk-or-test")
+        self.assertEqual(captured["json"]["model"], "typesafe/jev-1.13")
+        self.assertEqual(captured["json"]["state"], "Please refund the duplicate invoice payment")
+        self.assertEqual(captured["json"]["questions"]["department"]["type"], "choice")
+        self.assertEqual(result["backend"], "openrouter_jev")
+        self.assertEqual(result["requested_backend"], "openrouter_jev")
+        self.assertIsNone(result["fallback_reason"])
+        self.assertEqual(result["model"], "typesafe/jev-1.13-20260917")
+        self.assertEqual(result["answers"]["department"]["choice"], "billing")
+        self.assertEqual(result["answers"]["urgency"]["score"], 1.4)
+        self.assertAlmostEqual(result["answers"]["needs_generation"]["noul"], 0.12)
+        # Jev noul answers omit confidence; the bus derives |2p-1|.
+        self.assertAlmostEqual(result["answers"]["needs_generation"]["confidence"], round(abs(0.12 - 0.5) * 2, 4))
+
+    def test_jev_http_error_falls_back_to_mock_without_raising(self):
+        os.environ["SYSTEM1_BACKEND"] = "openrouter_jev"
+        os.environ["OPENROUTER_API_KEY"] = "sk-or-test"
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            return _FakeResponse({"error": "upstream"}, status_code=503)
+
+        with patch("httpx.post", side_effect=fake_post):
+            result = predict("Please refund the duplicate invoice payment", {
+                "department": _BILLING["department"],
+            })
+        self.assertEqual(result["backend"], "mock")
+        self.assertEqual(result["requested_backend"], "openrouter_jev")
+        self.assertIn("openrouter jev", result["fallback_reason"])
+        self.assertEqual(result["answers"]["department"]["choice"], "billing")
+
+    def test_jev_missing_answers_falls_back_to_mock(self):
+        os.environ["SYSTEM1_BACKEND"] = "openrouter_jev"
+        os.environ["OPENROUTER_API_KEY"] = "sk-or-test"
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            return _FakeResponse({"model": "typesafe/jev-1.13", "answers": {}})
+
+        with patch("httpx.post", side_effect=fake_post):
+            result = predict("Please refund the duplicate invoice payment", {
+                "department": _BILLING["department"],
+            })
+        self.assertEqual(result["backend"], "mock")
+        self.assertIn("missing answers", result["fallback_reason"])
+
+    def test_no_key_skips_openrouter_http_and_uses_demo_draft(self):
+        self.assertEqual(os.environ.get("OPENROUTER_API_KEY"), "")
+        before = _GEMINI_CALLS["n"]
+        with patch("httpx.post", side_effect=AssertionError("unexpected network")) as mocked:
+            response = _CLIENT.post("/tutor/ask", data={"question": "???"})
+        self.assertEqual(mocked.call_count, 0)
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["system1"]["route"], "generative")
+        self.assertEqual(body["system1"]["generative_provider"], "demo")
+        self.assertTrue(body["answer"].startswith("[demo-gemini]"))
+        self.assertEqual(_GEMINI_CALLS["n"], before + 1)
+
+    def test_escalated_tutor_drafts_with_the_free_chat_model(self):
+        os.environ["OPENROUTER_API_KEY"] = "sk-or-test"
+        before = _GEMINI_CALLS["n"]
+        captured = {}
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            captured["url"] = url
+            captured["headers"] = headers
+            captured["json"] = json
+            return _FakeResponse(_chat_payload())
+
+        with patch("httpx.post", side_effect=fake_post) as mocked:
+            response = _CLIENT.post("/tutor/ask", data={"question": "???"})
+
+        self.assertEqual(mocked.call_count, 1)
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["system1"]["route"], "generative")
+        self.assertEqual(body["system1"]["reason"], "needs_generation")
+        self.assertEqual(body["system1"]["generative_provider"], "openrouter")
+        self.assertEqual(body["answer"], "A drafted hint about shapes.")
+        self.assertEqual(captured["url"], "https://openrouter.ai/api/v1/chat/completions")
+        self.assertEqual(captured["json"]["model"], "openrouter/free")
+        self.assertEqual(captured["headers"]["Authorization"], "Bearer sk-or-test")
+        self.assertEqual(
+            [message["role"] for message in captured["json"]["messages"]],
+            ["system", "user"],
+        )
+        self.assertIn("???", captured["json"]["messages"][1]["content"])
+        self.assertEqual(_GEMINI_CALLS["n"], before)
+
+    def test_system2_model_override_is_sent_to_chat(self):
+        os.environ["OPENROUTER_API_KEY"] = "sk-or-test"
+        os.environ["SYSTEM2_MODEL"] = "meta-llama/llama-3.2-3b-instruct:free"
+        captured = {}
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            captured["model"] = json["model"]
+            return _FakeResponse(_chat_payload("Pinned free draft."))
+
+        with patch("httpx.post", side_effect=fake_post):
+            outcome = decide_flow("tutor", tutor_state("???"))
+        self.assertEqual(captured["model"], "meta-llama/llama-3.2-3b-instruct:free")
+        self.assertEqual(outcome["generative_provider"], "openrouter")
+        self.assertEqual(outcome["text"], "Pinned free draft.")
+
+    def test_chat_http_error_falls_back_to_demo_draft(self):
+        os.environ["OPENROUTER_API_KEY"] = "sk-or-test"
+        before = _GEMINI_CALLS["n"]
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            return _FakeResponse({"error": "rate limit"}, status_code=429)
+
+        with patch("httpx.post", side_effect=fake_post):
+            outcome = decide_flow("tutor", tutor_state("???"))
+        self.assertEqual(outcome["route"], "generative")
+        self.assertEqual(outcome["generative_provider"], "demo")
+        self.assertTrue(outcome["text"].startswith("[demo-gemini]"))
+        self.assertEqual(_GEMINI_CALLS["n"], before + 1)
+
+    def test_retention_escalation_drafts_on_openrouter(self):
+        os.environ["OPENROUTER_API_KEY"] = "sk-or-test"
+        before = _GEMINI_CALLS["n"]
+        captured = {}
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            captured["url"] = url
+            captured["model"] = json["model"]
+            captured["system"] = json["messages"][0]["content"]
+            return _FakeResponse(_chat_payload("Come back to the trial. Check the softmax axis."))
+
+        with patch("httpx.post", side_effect=fake_post):
+            outcome = decide_flow("retention", {"text": "hmm"})
+        self.assertEqual(outcome["flow"], "retention")
+        self.assertEqual(outcome["route"], "generative")
+        self.assertEqual(outcome["generative_provider"], "openrouter")
+        self.assertEqual(outcome["text"], "Come back to the trial. Check the softmax axis.")
+        self.assertIn("/chat/completions", captured["url"])
+        self.assertEqual(captured["model"], "openrouter/free")
+        self.assertIn("Retention", captured["system"])
+        self.assertEqual(_GEMINI_CALLS["n"], before)
+
+    def test_low_confidence_jev_escalates_to_chat_and_high_confidence_does_not(self):
+        os.environ["SYSTEM1_BACKEND"] = "openrouter_jev"
+        os.environ["OPENROUTER_API_KEY"] = "sk-or-test"
+        calls = []
+
+        def answers(confidence, noul):
+            return {
+                "model": "typesafe/jev-1.13-20260917",
+                "answers": {
+                    "intent": {
+                        "type": "choice",
+                        "choice": "define",
+                        "confidence": confidence,
+                        "probabilities": {"define": confidence, "hint": 0.0, "lore": 0.0, "open": round(1 - confidence, 4)},
+                    },
+                    "difficulty": {
+                        "type": "score",
+                        "score": 0.2,
+                        "confidence": 0.9,
+                        "probabilities": {"0": 0.8, "1": 0.2, "2": 0.0},
+                    },
+                    "needs_generation": {"type": "noul", "noul": noul},
+                },
+            }
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            calls.append(url)
+            if "decisions" in url:
+                # First call is the low-confidence tutor pass; second is high-confidence.
+                noul = 0.9 if len(calls) == 1 else 0.04
+                confidence = 0.2 if len(calls) == 1 else 0.99
+                return _FakeResponse(answers(confidence, noul))
+            return _FakeResponse(_chat_payload("Generated tutor draft."))
+
+        with patch("httpx.post", side_effect=fake_post):
+            low = decide_flow("tutor", tutor_state("Explain this in a new way"))
+            high = decide_flow("tutor", tutor_state("What is softmax?"))
+
+        self.assertEqual(low["backend"], "openrouter_jev")
+        self.assertEqual(low["route"], "generative")
+        self.assertEqual(low["reason"], "needs_generation")
+        self.assertEqual(low["generative_provider"], "openrouter")
+        self.assertEqual(low["text"], "Generated tutor draft.")
+        self.assertEqual(high["route"], "deterministic")
+        self.assertIsNone(high["generative_provider"])
+        self.assertIn("softmax", high["text"].lower())
+        self.assertEqual(sum(1 for url in calls if "decisions" in url), 2)
+        self.assertEqual(sum(1 for url in calls if "chat/completions" in url), 1)
 
 
 if __name__ == "__main__":
