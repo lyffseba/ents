@@ -24,10 +24,12 @@ import tempfile
 from pathlib import Path as PyPath
 
 from .config import APP_NAME, DEBUG, PRO_MONTHLY_PRICE, FREE_TIER_PHASES, get_gemini_key, USE_VERTEX
-from .deps import get_db, call_gemini, get_stripe, Base, engine
+from .deps import get_db, get_stripe, Base, engine
 from . import models
 from .oracle import grade_submission
 from .agents.scheduler import start_agents, stop_agents
+from .system1 import decide, decide_flow, status as system1_status
+from .system1.questions import QuestionError
 # ensure models registered for queries in /ops
 _ = models.User, models.AgentDecision, models.RevenueEvent
 
@@ -94,28 +96,41 @@ async def tutor_page(request: Request):
 
 @app.post("/tutor/ask")
 async def tutor_ask(question: str = Form(...)):
-    """Core Gemini-powered tutor. Every ask = LLM call + log (evidence)."""
-    answer = call_gemini(
-        question,
-        system="You are Treebeard, wise Ent tutor for the Fangorn Trials. Help the learner master JAX/MLX/MAX/Mojo LLM internals. Give hints, not full solutions unless they are stuck."
-    )
-    return {"answer": answer, "timestamp": datetime.datetime.utcnow().isoformat()}
+    """System 1 gate in front of the tutor. High confidence skips the LLM."""
+    from .system1.flows import tutor_state
+    outcome = decide_flow("tutor", tutor_state(question))
+    return {
+        "answer": outcome["text"],
+        "timestamp": datetime.datetime.utcnow().isoformat(),
+        "system1": _public_system1(outcome),
+    }
 
 @app.get("/ops", response_class=HTMLResponse)
 async def ops_dashboard(request: Request, db=Depends(get_db)):
     """AI-Native ops visibility - key for judges (agent logs, decisions, Gemini usage)."""
     # Real logs from DB (populated by agents + every Gemini call site)
-    decisions = db.query(models.AgentDecision).order_by(models.AgentDecision.ts.desc()).limit(10).all()
-    logs = [{"ts": str(d.ts), "agent": d.agent_name, "decision": d.decision, "gemini": True} for d in decisions]
+    decisions = db.query(models.AgentDecision).order_by(models.AgentDecision.ts.desc()).limit(20).all()
+    logs = [_ops_log(d) for d in decisions]
     if not logs:
-        logs = [{"ts": "demo", "agent": "RetentionAgent (demo)", "decision": "Run /ops/trigger-retention to execute live Gemini agent now.", "gemini": True}]
-    return templates.TemplateResponse(request, "ops.html", { "logs": logs, "gemini_calls_today": len(logs)})
+        logs = [{
+            "ts": "demo",
+            "agent": "RetentionAgent (demo)",
+            "decision": "Run /ops/trigger-retention to execute a System 1 gated decision now.",
+            "gemini": False,
+            "system1": False,
+            "action": "",
+        }]
+    return templates.TemplateResponse(request, "ops.html", {
+        "logs": logs,
+        "gemini_calls_today": sum(1 for row in logs if row.get("gemini")),
+        "system1_decisions": sum(1 for row in logs if row.get("system1")),
+    })
 
 @app.post("/ops/trigger-retention")
 async def trigger_retention():
     from .agents.retention import run_retention_agent
     run_retention_agent(dry_run=False)
-    return {"triggered": "retention", "note": "Check /ops for new logged decision + Gemini trace."}
+    return {"triggered": "retention", "note": "Check /ops for the System 1 decision and the retention action."}
 
 @app.post("/ops/trigger-content")
 async def trigger_content():
@@ -163,6 +178,42 @@ async def stripe_webhook(request: Request):
     return {"status": "ok (stub)"}
 
 # Health for Cloud Run
+@app.get("/system1/status")
+async def system1_status_route():
+    """Which System 1 backend would run, without loading weights."""
+    return system1_status()
+
+
+@app.post("/system1/decide")
+async def system1_decide(request: Request):
+    """Score a state. Pass ``flow`` (tutor|retention) or explicit ``questions``."""
+    try:
+        body = await request.json()
+    except Exception as exc:
+        raise HTTPException(400, f"expected JSON body ({exc})") from exc
+    if not isinstance(body, dict):
+        raise HTTPException(400, "expected a JSON object")
+    state = body.get("state")
+    if state is None:
+        raise HTTPException(400, "state is required")
+    flow = body.get("flow")
+    questions = body.get("questions")
+    try:
+        if questions is None:
+            if not flow:
+                raise QuestionError("pass flow (tutor|retention) or questions")
+            outcome = decide_flow(str(flow), state)
+        else:
+            outcome = decide(
+                state,
+                questions,
+                flow=str(flow or "raw"),
+            )
+    except QuestionError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return _public_system1(outcome, include_text=True)
+
+
 @app.get("/healthz")
 @app.get("/health")
 async def health():
@@ -170,6 +221,7 @@ async def health():
         "status": "ok",
         "service": APP_NAME,
         "gemini_configured": bool(get_gemini_key() or USE_VERTEX),
+        "system1": system1_status(),
     }
 
 @app.get("/judges", response_class=HTMLResponse)
@@ -178,6 +230,41 @@ async def judges_page(request: Request):
     return templates.TemplateResponse(request, "judges.html", {
         "app_name": APP_NAME,
     })
+
+def _public_system1(outcome: dict, include_text: bool = False) -> dict:
+    payload = {
+        "route": outcome["route"],
+        "reason": outcome["reason"],
+        "backend": outcome["backend"],
+        "requested_backend": outcome["requested_backend"],
+        "fallback_reason": outcome["fallback_reason"],
+        "model": outcome.get("model"),
+        "confidence": outcome["confidence"],
+        "answers": outcome["answers"],
+        "generative_provider": outcome["generative_provider"],
+        "flow": outcome["flow"],
+    }
+    if include_text:
+        payload["text"] = outcome["text"]
+    return payload
+
+
+def _ops_log(row) -> dict:
+    name = row.agent_name or ""
+    action = row.action_taken or ""
+    system1 = name.startswith("System1") or action.startswith("system1:")
+    # ContentAgent still calls Gemini directly. System 1 rows badge GEMINI
+    # only when that gate actually drafted with Gemini.
+    live_gemini = name == "ContentAgent" or action.startswith("system1:generative:gemini")
+    return {
+        "ts": str(row.ts),
+        "agent": name,
+        "decision": row.decision,
+        "gemini": live_gemini,
+        "system1": system1,
+        "action": action,
+    }
+
 
 if __name__ == "__main__":
     import uvicorn

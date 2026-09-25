@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
-<h1 class="text-3xl">🌿 Treebeard's AI Tutor (Gemini)</h1>
-<p class="text-green-300">Ask anything about the Trials. Every question triggers a real Gemini call — logged for the XPRIZE judges as live AI in production.</p>
+<h1 class="text-3xl">🌿 Treebeard's Tutor</h1>
+<p class="text-green-300">A System 1 gate answers high-confidence questions from a fixed route. Open questions draft with OpenRouter or Gemini when a key is set; demo mode still answers without one. Every gate decision is logged on /ops.</p>
 
 <form id="tutor-form" class="mt-6 flex gap-2">
   <input name="question" class="flex-1 bg-black border border-green-800 p-3 rounded" placeholder="Why does softmax turn logits into probabilities that sum to 1?"/>
@@ -17,7 +17,11 @@ form.addEventListener('submit', async (e) => {
   const q = form.question.value;
   const res = await fetch('/tutor/ask', {method:'POST', body: new URLSearchParams({question: q})});
   const data = await res.json();
-  document.getElementById('answer').textContent = data.answer;
+  const s1 = data.system1;
+  const meta = s1
+    ? `System 1 ${s1.backend} · ${s1.route} · confidence ${Number(s1.confidence).toFixed(2)}\n\n`
+    : "";
+  document.getElementById('answer').textContent = meta + (data.answer || "");
 });
 </script>
 {% endblock %}

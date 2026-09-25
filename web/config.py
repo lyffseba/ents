@@ -45,3 +45,75 @@ def get_gemini_key() -> str:
         # In real deploy, fail loud or use Vertex ADC
         print("⚠️ WARNING: No GEMINI_API_KEY set. Set for tutor + agents (required for XPRIZE Gemini API rule).")
     return GEMINI_API_KEY
+
+
+# --- System 1 decision bus (web/system1) ---
+# Empty SYSTEM1_BACKEND prefers local Laya, then the mock heuristic if weights
+# or the package are missing. OPENROUTER_API_KEY serves Jev and System 2 drafts.
+# Demo mode leaves both keys empty. See README "System 1 decision bus".
+
+def system1_backend_setting() -> str:
+    """``laya``, ``openrouter_jev``, ``mock``, or ``""`` (prefer local Laya)."""
+    return os.getenv("SYSTEM1_BACKEND", "").strip().lower()
+
+
+def openrouter_api_key() -> str:
+    return os.getenv("OPENROUTER_API_KEY", "").strip()
+
+
+def system1_high_confidence() -> float:
+    raw = os.getenv("SYSTEM1_HIGH_CONFIDENCE", "0.85")
+    try:
+        value = float(raw)
+    except ValueError:
+        return 0.85
+    if not 0.0 <= value <= 1.0:
+        return 0.85
+    return value
+
+
+def system1_needs_generation_threshold() -> float:
+    """Noul at or above this on ``needs_generation`` always drafts with System 2."""
+    raw = os.getenv("SYSTEM1_NEEDS_GENERATION", "0.5")
+    try:
+        value = float(raw)
+    except ValueError:
+        return 0.5
+    if not 0.0 <= value <= 1.0:
+        return 0.5
+    return value
+
+
+def system1_jev_model() -> str:
+    return os.getenv("SYSTEM1_JEV_MODEL", "typesafe/jev-1.13").strip() or "typesafe/jev-1.13"
+
+
+def system2_model() -> str:
+    return os.getenv("SYSTEM2_MODEL", "openai/gpt-4o-mini").strip() or "openai/gpt-4o-mini"
+
+
+def openrouter_decisions_url() -> str:
+    return os.getenv(
+        "OPENROUTER_DECISIONS_URL",
+        "https://openrouter.ai/api/alpha/decisions",
+    ).strip()
+
+
+def openrouter_chat_url() -> str:
+    return os.getenv(
+        "OPENROUTER_CHAT_URL",
+        "https://openrouter.ai/api/v1/chat/completions",
+    ).strip()
+
+
+def system1_laya_model() -> str:
+    """Optional Laya checkpoint name (``english``, ``multilingual``, ``typed-decisions``)."""
+    return os.getenv("SYSTEM1_LAYA_MODEL", "").strip()
+
+
+def system1_laya_device() -> str:
+    return os.getenv("SYSTEM1_LAYA_DEVICE", "").strip()
+
+
+def system1_laya_preload() -> bool:
+    return os.getenv("SYSTEM1_LAYA_PRELOAD", "").lower() in {"1", "true", "yes"}
