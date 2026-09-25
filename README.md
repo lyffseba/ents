@@ -135,7 +135,7 @@ Demo / CI (no keys, no weights):
 make -C web smoke
 ```
 
-That target sets `SYSTEM1_BACKEND=mock`. "What is softmax?" on `/tutor` is a deterministic glossary hit. An empty or ambiguous ask escalates to the demo draft. `POST /ops/trigger-retention` gates the stalled-learner nudge and logs it on `/ops`.
+That target sets `SYSTEM1_BACKEND=mock` and runs `scripts/test_system1.py` (mock backend, confidence gate, tutor and retention) before the HTTP smoke. "What is softmax?" on `/tutor` is a deterministic glossary hit. An empty or ambiguous ask escalates to the demo draft. `POST /ops/trigger-retention` gates the stalled-learner nudge and logs it on `/ops`.
 
 Local Laya (downloads the checkpoint on first predict, about 800MB for English):
 
