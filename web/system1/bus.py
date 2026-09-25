@@ -85,7 +85,11 @@ def decide(
 
 
 def draft_text(system: str, prompt: str) -> tuple[str, str]:
-    """System 2 draft. OpenRouter when configured, otherwise demo-safe Gemini."""
+    """System 2 draft. OpenRouter chat when a key is set, otherwise demo-safe Gemini.
+
+    No key skips the OpenRouter call entirely. The default chat model is
+    ``openrouter/free`` (override with ``SYSTEM2_MODEL``).
+    """
     if openrouter_api_key():
         try:
             return _openrouter_chat(system, prompt), "openrouter"
