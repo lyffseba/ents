@@ -1,14 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
 <h1 class="text-3xl ent-green">The Entmoot — Live AI Operations</h1>
-<p class="text-green-400">This is the heart of our AI-Native Operations score. Gemini agents execute real business decisions continuously. Every action is logged (API records + decision rationale) for judges.</p>
+<p class="text-green-400">Retention and the tutor pass through a System 1 gate before any generative call. High-confidence routes stay deterministic. Every System 1 decision is logged here next to the agent action.</p>
 
 <div class="mt-6">
-  <div class="text-sm mb-2">Recent Agent Decisions (Gemini calls: {{ gemini_calls_today or '—' }})</div>
+  <div class="text-sm mb-2">Recent decisions (System 1: {{ system1_decisions or 0 }} · generative: {{ gemini_calls_today or 0 }})</div>
   {% for log in logs %}
   <div class="mb-3 p-3 bg-black/60 border-l-4 border-green-600 text-sm">
     <span class="text-green-500">{{ log.ts }}</span> — <strong>{{ log.agent }}</strong><br>
     {{ log.decision }}
+    {% if log.system1 %}<span class="ml-2 text-[10px] px-1 py-px bg-emerald-950 text-emerald-300 rounded">SYSTEM 1</span>{% endif %}
     {% if log.gemini %}<span class="ml-2 text-[10px] px-1 py-px bg-green-900 rounded">GEMINI</span>{% endif %}
   </div>
   {% endfor %}

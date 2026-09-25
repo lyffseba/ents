@@ -11,7 +11,7 @@
 > **For Judges (quick start):**
 > 1. **See the live AI-native business in action:** Deployed version runs Gemini agents continuously. Local: follow "XPRIZE Contest Build" section below.
 > 2. Go to `/ops` (or deployed equivalent) → click "trigger-retention" or "trigger-content". Watch Gemini make a real decision and log it (this is "AI executes key business decisions").
-> 3. Go to `/tutor` and ask a question — every response is a Gemini API call in production.
+> 3. Go to `/tutor` and ask a question. A System 1 gate answers high-confidence prompts directly; open questions still call Gemini or OpenRouter when a key is set.
 > 4. Evidence package: `xprize_evidence/`, `SUBMISSION.md`, `scripts/export_revenue.py`, agent logs in DB + /ops.
 > 5. Full curriculum + Oracle: the `max_env/phases/` + `grademe.sh` (graders still pass).
 >
@@ -89,9 +89,81 @@ This repository is both the curriculum and the XPRIZE surface:
 
 1. **`max_env/phases/`** — Trial of Fangorn. Grade with `./grademe.sh`.
 2. **`ents-cli/game.py`** — Textual RPG over those same files (`python ents-cli/game.py`).
-3. **`web/`** — Ents Academy (FastAPI). Demo mode works without a Gemini key: `make -C web smoke`.
+3. **`web/`** — Ents Academy (FastAPI). Demo mode works without API keys: `make -C web smoke` (System 1 uses the mock backend).
 4. **`ents-pi-mod/`** — Pi coding-agent extension (early).
 
 C03 (Self-Attention) and C04 (GPT-2) are not written yet. C05 is a production stub.
+
+---
+
+## System 1 decision bus
+
+Tutor asks and the retention agent pass through a confidence-gated System 1 layer before any generative call. You send application **state** plus typed questions. Laya and TypeSafe Jev both speak three primitives; this bus uses Laya's names on the wire:
+
+| You write | Wire type | Answer |
+| --- | --- | --- |
+| Choice | `choice` | selected label, per-option probabilities, confidence |
+| Score | `score` | probability-weighted level on your ordered rubric, confidence |
+| Noul | `noul` | `P(true)`. A question named `needs_generation` forces a draft when that probability is at least `SYSTEM1_NEEDS_GENERATION` (default 0.5). |
+
+The gate then:
+
+1. **High confidence** (every routing choice, and `needs_generation` when it is confidently false, at or above `SYSTEM1_HIGH_CONFIDENCE`, default 0.85) takes a **deterministic** template. No LLM.
+2. **Mid/low confidence**, or `needs_generation` above the threshold, drafts with **OpenRouter chat** when `OPENROUTER_API_KEY` is set. With no key, the existing demo/Gemini path answers so the Academy still runs.
+
+Every decision is stored in `agent_decisions` (`agent_name=System1`) and listed on `/ops` with a SYSTEM 1 badge. `GET /system1/status` reports which backend would run without loading weights. `POST /system1/decide` accepts either `"flow": "tutor"|"retention"` or your own `questions`.
+
+### Environment
+
+| Variable | Role |
+| --- | --- |
+| `SYSTEM1_BACKEND` | `laya` (default when unset), `openrouter_jev`, or `mock`. Unset prefers local Laya and falls back to the mock heuristic if the package or weights are missing, so CI and demo mode stay green. |
+| `OPENROUTER_API_KEY` | TypeSafe Jev on OpenRouter (`typesafe/jev-1.13` via `POST /api/alpha/decisions`) and System 2 chat drafts. Omit it for demo mode. |
+| `SYSTEM1_JEV_MODEL` | Jev model id. Default `typesafe/jev-1.13`. |
+| `SYSTEM2_MODEL` | OpenRouter chat model used only after the gate escalates. Default `openai/gpt-4o-mini`. |
+| `SYSTEM1_HIGH_CONFIDENCE` | Deterministic cutoff. Default `0.85`. |
+| `SYSTEM1_NEEDS_GENERATION` | Noul cutoff for a question named `needs_generation`. Default `0.5`. |
+| `SYSTEM1_LAYA_MODEL` | Optional checkpoint: `english`, `multilingual`, or `typed-decisions`. |
+| `SYSTEM1_LAYA_DEVICE` | `cpu`, `cuda`, or `mps`. |
+| `SYSTEM1_LAYA_PRELOAD` | `1` to load Laya checkpoints at first use instead of lazily. |
+
+### Try it
+
+Demo / CI (no keys, no weights):
+
+```bash
+make -C web smoke
+```
+
+That target sets `SYSTEM1_BACKEND=mock` and runs `scripts/test_system1.py` (mock backend, confidence gate, tutor and retention) before the HTTP smoke. "What is softmax?" on `/tutor` is a deterministic glossary hit. An empty or ambiguous ask escalates to the demo draft. `POST /ops/trigger-retention` gates the stalled-learner nudge and logs it on `/ops`.
+
+Local Laya (downloads the checkpoint on first predict, about 800MB for English):
+
+```bash
+pip install laya
+export SYSTEM1_BACKEND=laya
+# optional: export SYSTEM1_LAYA_DEVICE=cpu
+make -C web run
+```
+
+If `import laya` fails or the weights cannot be loaded, that process falls back to the mock and records the reason on the decision.
+
+Jev on OpenRouter, plus chat drafts for low-confidence cases:
+
+```bash
+export SYSTEM1_BACKEND=openrouter_jev
+export OPENROUTER_API_KEY=sk-or-...
+export SYSTEM1_JEV_MODEL=typesafe/jev-1.13   # or ~typesafe/jev-latest
+export SYSTEM2_MODEL=openai/gpt-4o-mini
+```
+
+A direct decision:
+
+```bash
+curl -s localhost:8000/system1/decide -H 'content-type: application/json' -d '{
+  "state": "What is softmax?",
+  "flow": "tutor"
+}'
+```
 
 Good luck. The forest awaits.
