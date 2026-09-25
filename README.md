@@ -155,9 +155,16 @@ A key is free to create: sign in at [openrouter.ai](https://openrouter.ai/) and 
 ```bash
 export OPENROUTER_API_KEY=sk-or-...   # from https://openrouter.ai/settings/keys
 export SYSTEM1_BACKEND=openrouter_jev # mock | laya | openrouter_jev
-export SYSTEM1_JEV_MODEL=typesafe/jev-1.13   # or ~typesafe/jev-latest
-export SYSTEM2_MODEL=openrouter/free         # or e.g. a pinned model:free
+export SYSTEM1_JEV_MODEL=typesafe/jev-1.13   # optional; this is the default
+export SYSTEM2_MODEL=openrouter/free         # optional; free-router default, or a pinned model:free
 make -C web run
+```
+
+Live smoke from the repo root (not part of `make -C web smoke`). The key must already be in the environment. The command sets `SYSTEM1_BACKEND=openrouter_jev` itself. Without `--draft` it only calls Jev. With `--draft` it also calls chat completions on `SYSTEM2_MODEL` (`openrouter/free` unless overridden). Exit 2 if the key is unset (no network). Exit 1 if Jev falls back to the mock or the draft does not come from OpenRouter.
+
+```bash
+python -m web.system1.live
+python -m web.system1.live --draft
 ```
 
 Compare with mock (no key, no network — the same path CI runs):
