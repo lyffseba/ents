@@ -91,6 +91,7 @@ This repository is both the curriculum and the XPRIZE surface:
 2. **`ents-cli/game.py`** — Textual RPG over those same files (`python ents-cli/game.py`).
 3. **`web/`** — Ents Academy (FastAPI). Demo mode works without API keys: `make -C web smoke` (System 1 uses the mock backend).
 4. **`ents-pi-mod/`** — Pi coding-agent extension (early).
+5. **[`docs/STACK.md`](docs/STACK.md)** — stack ledger: pins, how each piece is used, latest stable official docs, and drift.
 
 C03 (Self-Attention) and C04 (GPT-2) are not written yet. C05 is a production stub.
 
