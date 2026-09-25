@@ -495,5 +495,120 @@ class OpenRouterBackendTests(_EnvGuard):
         self.assertEqual(sum(1 for url in calls if "chat/completions" in url), 1)
 
 
+class OpenRouterLiveSmokeTests(_EnvGuard):
+    """``python -m web.system1.live`` is opt-in. Default CI never calls OpenRouter."""
+
+    def _main(self):
+        from web.system1.live import main
+        return main
+
+    def test_readme_documents_the_live_command_and_pinned_models(self):
+        readme = (ROOT / "README.md").read_text()
+        self.assertIn("python -m web.system1.live --draft", readme)
+        self.assertIn("typesafe/jev-1.13", readme)
+        self.assertIn("openrouter/free", readme)
+
+    def test_missing_key_skips_the_network(self):
+        main = self._main()
+        self.assertEqual(os.environ.get("OPENROUTER_API_KEY"), "")
+        with patch("httpx.post", side_effect=AssertionError("unexpected network")) as mocked:
+            code = main([])
+        self.assertEqual(code, 2)
+        self.assertEqual(mocked.call_count, 0)
+
+    def test_jev_decision_uses_the_pinned_model_and_skips_chat_by_default(self):
+        os.environ["OPENROUTER_API_KEY"] = "sk-or-live"
+        os.environ["SYSTEM1_BACKEND"] = "mock"
+        main = self._main()
+        captured = []
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            captured.append({"url": url, "headers": headers, "json": json})
+            return _FakeResponse({
+                "model": "typesafe/jev-1.13-20260917",
+                "answers": {
+                    "department": {
+                        "type": "choice",
+                        "choice": "billing",
+                        "confidence": 0.95,
+                        "probabilities": {"billing": 0.97, "technical": 0.03},
+                    },
+                    "needs_generation": {"type": "noul", "noul": 0.08},
+                },
+            })
+
+        from io import StringIO
+        stdout = StringIO()
+        with patch("httpx.post", side_effect=fake_post), patch("sys.stdout", stdout):
+            code = main([])
+        self.assertEqual(code, 0)
+        self.assertEqual(len(captured), 1)
+        self.assertEqual(captured[0]["url"], "https://openrouter.ai/api/alpha/decisions")
+        self.assertEqual(captured[0]["json"]["model"], "typesafe/jev-1.13")
+        self.assertEqual(captured[0]["headers"]["Authorization"], "Bearer sk-or-live")
+        self.assertEqual(captured[0]["json"]["questions"]["department"]["type"], "choice")
+        report = json.loads(stdout.getvalue())
+        self.assertEqual(report["backend"], "openrouter_jev")
+        self.assertEqual(report["jev_model"], "typesafe/jev-1.13")
+        self.assertEqual(report["served_model"], "typesafe/jev-1.13-20260917")
+        self.assertEqual(report["system2_model"], "openrouter/free")
+        self.assertEqual(report["answers"]["department"]["choice"], "billing")
+        self.assertIsNone(report["draft"])
+        self.assertNotIn("sk-or-live", stdout.getvalue())
+
+    def test_draft_flag_calls_the_free_chat_model(self):
+        os.environ["OPENROUTER_API_KEY"] = "sk-or-live"
+        main = self._main()
+        captured = []
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            captured.append({"url": url, "json": json})
+            if "decisions" in url:
+                return _FakeResponse({
+                    "model": "typesafe/jev-1.13-20260917",
+                    "answers": {
+                        "department": {
+                            "type": "choice",
+                            "choice": "billing",
+                            "confidence": 0.95,
+                            "probabilities": {"billing": 0.97, "technical": 0.03},
+                        },
+                        "needs_generation": {"type": "noul", "noul": 0.08},
+                    },
+                })
+            return _FakeResponse(_chat_payload("Refund the duplicate charge."))
+
+        from io import StringIO
+        stdout = StringIO()
+        before = _GEMINI_CALLS["n"]
+        with patch("httpx.post", side_effect=fake_post), patch("sys.stdout", stdout):
+            code = main(["--draft"])
+        self.assertEqual(code, 0)
+        self.assertEqual(_GEMINI_CALLS["n"], before)
+        self.assertEqual(len(captured), 2)
+        self.assertIn("/api/alpha/decisions", captured[0]["url"])
+        self.assertIn("/chat/completions", captured[1]["url"])
+        self.assertEqual(captured[1]["json"]["model"], "openrouter/free")
+        report = json.loads(stdout.getvalue())
+        self.assertEqual(report["draft"]["provider"], "openrouter")
+        self.assertEqual(report["draft"]["model"], "openrouter/free")
+        self.assertEqual(report["draft"]["text"], "Refund the duplicate charge.")
+        self.assertNotIn("sk-or-live", stdout.getvalue())
+
+    def test_jev_http_failure_is_nonzero_and_does_not_draft(self):
+        os.environ["OPENROUTER_API_KEY"] = "sk-or-live"
+        main = self._main()
+        calls = []
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            calls.append(url)
+            return _FakeResponse({"error": "upstream"}, status_code=503)
+
+        with patch("httpx.post", side_effect=fake_post):
+            code = main(["--draft"])
+        self.assertEqual(code, 1)
+        self.assertEqual(calls, ["https://openrouter.ai/api/alpha/decisions"])
+
+
 if __name__ == "__main__":
     raise SystemExit(unittest.main(verbosity=2))
