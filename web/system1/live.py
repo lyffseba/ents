@@ -28,7 +28,8 @@ usage: python -m web.system1.live [--draft]
 Reads OPENROUTER_API_KEY from the environment (required).
 Pins SYSTEM1_BACKEND=openrouter_jev for this process.
 Optional: SYSTEM1_JEV_MODEL (default typesafe/jev-1.13),
-          SYSTEM2_MODEL (default openrouter/free, used only with --draft).
+          SYSTEM2_MODEL (openrouter/free, openrouter/auto, or a :free id;
+          default openrouter/free; used only with --draft).
 """
 
 SMOKE_STATE = "Please refund the duplicate invoice payment."

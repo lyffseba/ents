@@ -90,9 +90,39 @@ def system1_jev_model() -> str:
     return os.getenv("SYSTEM1_JEV_MODEL", "typesafe/jev-1.13").strip() or "typesafe/jev-1.13"
 
 
+# Pinned against OpenRouter docs (2026-09-25):
+# https://openrouter.ai/docs/guides/routing/routers/free-router
+# https://openrouter.ai/docs/guides/routing/routers/auto-router
+# Free router is zero-price. Auto selects a model from market spend and bills
+# that model's rate, so it is opt-in and never the default.
+SYSTEM2_FREE_MODEL = "openrouter/free"
+SYSTEM2_AUTO_MODEL = "openrouter/auto"
+
+
+def system2_model_allowed(model: str) -> bool:
+    """System 2 may only call the free router, the auto router, or a ``:free`` model."""
+    if model in {SYSTEM2_FREE_MODEL, SYSTEM2_AUTO_MODEL}:
+        return True
+    return model.endswith(":free") and not model.startswith(":")
+
+
 def system2_model() -> str:
-    """Chat model for escalations. Default is OpenRouter's free-model router."""
-    return os.getenv("SYSTEM2_MODEL", "openrouter/free").strip() or "openrouter/free"
+    """Chat model for escalations. Default is the free router, never a paid id.
+
+    ``SYSTEM2_MODEL=openrouter/free``, ``openrouter/auto``, or a ``:free`` model
+    id is sent as-is. Any other value (including paid chat models) is ignored
+    and ``openrouter/free`` is used instead. Jev stays on ``SYSTEM1_JEV_MODEL``.
+    """
+    raw = os.getenv("SYSTEM2_MODEL", "").strip()
+    if not raw or raw == SYSTEM2_FREE_MODEL:
+        return SYSTEM2_FREE_MODEL
+    if system2_model_allowed(raw):
+        return raw
+    print(
+        f"[SYSTEM1] SYSTEM2_MODEL={raw!r} is not {SYSTEM2_FREE_MODEL}, "
+        f"{SYSTEM2_AUTO_MODEL}, or a :free model; using {SYSTEM2_FREE_MODEL}"
+    )
+    return SYSTEM2_FREE_MODEL
 
 
 def openrouter_decisions_url() -> str:

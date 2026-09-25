@@ -109,7 +109,7 @@ Tutor asks and the retention agent pass through a confidence-gated System 1 laye
 The gate then:
 
 1. **High confidence** (every routing choice, and `needs_generation` when it is confidently false, at or above `SYSTEM1_HIGH_CONFIDENCE`, default 0.85) takes a **deterministic** template. No LLM.
-2. **Mid/low confidence**, or `needs_generation` above the threshold, drafts with **OpenRouter chat** (`POST /api/v1/chat/completions`) when `OPENROUTER_API_KEY` is set. The default model is the free router `openrouter/free`. With no key, that call is skipped and the existing demo/Gemini path answers so the Academy still runs.
+2. **Mid/low confidence**, or `needs_generation` above the threshold, drafts with **OpenRouter chat** (`POST /api/v1/chat/completions`) when `OPENROUTER_API_KEY` is set. The default model is the free router `openrouter/free`. With no key, that call is skipped and the existing demo/Gemini path answers so the Academy still runs. System 2 never defaults to a paid chat model. Jev (`typesafe/jev-1.13`) stays on the decisions API and is separate from these chat ids.
 
 Every decision is stored in `agent_decisions` (`agent_name=System1`) and listed on `/ops` with a SYSTEM 1 badge. `GET /system1/status` reports which backend would run without loading weights. `POST /system1/decide` accepts either `"flow": "tutor"|"retention"` or your own `questions`.
 
@@ -120,7 +120,7 @@ Every decision is stored in `agent_decisions` (`agent_name=System1`) and listed 
 | `SYSTEM1_BACKEND` | `laya` (default when unset), `openrouter_jev`, or `mock`. Unset prefers local Laya and falls back to the mock heuristic if the package or weights are missing, so CI and demo mode stay green. |
 | `OPENROUTER_API_KEY` | TypeSafe Jev on OpenRouter (`typesafe/jev-1.13` via `POST /api/alpha/decisions`) and System 2 chat drafts. Omit it for demo mode: Jev falls back to the mock, and escalations skip OpenRouter. |
 | `SYSTEM1_JEV_MODEL` | Jev model id. Default `typesafe/jev-1.13` (current Decisions API id; `~typesafe/jev-latest` tracks the newest release). |
-| `SYSTEM2_MODEL` | OpenRouter chat model used only after the gate escalates. Default `openrouter/free`. Set a pinned `:free` model to choose one. |
+| `SYSTEM2_MODEL` | Chat model after the gate escalates. Default `openrouter/free`. Also allowed: `openrouter/auto`, or any id ending in `:free`. Any other id is ignored and `openrouter/free` is sent. |
 | `SYSTEM1_HIGH_CONFIDENCE` | Deterministic cutoff. Default `0.85`. |
 | `SYSTEM1_NEEDS_GENERATION` | Noul cutoff for a question named `needs_generation`. Default `0.5`. |
 | `SYSTEM1_LAYA_MODEL` | Optional checkpoint: `english`, `multilingual`, or `typed-decisions`. |
@@ -150,13 +150,25 @@ If `import laya` fails or the weights cannot be loaded, that process falls back 
 
 Jev on OpenRouter, plus chat drafts for low-confidence cases.
 
-A key is free to create: sign in at [openrouter.ai](https://openrouter.ai/) and create one at [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys). You do not need a separate TypeSafe account. Jev itself is billed per input token on that key (output tokens are free; price is on the [Jev 1.13 model page](https://openrouter.ai/typesafe/jev-1.13)). System 2 drafts default to [`openrouter/free`](https://openrouter.ai/openrouter/free), which routes to a zero-price model, so an escalation does not require a paid chat model. Pin one with `SYSTEM2_MODEL` (any model id ending in `:free`) when you want a specific free model instead of the router.
+A key is free to create: sign in at [openrouter.ai](https://openrouter.ai/) and create one at [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys). You do not need a separate TypeSafe account. Jev itself is billed per input token on that key (output tokens are free; price is on the [Jev 1.13 model page](https://openrouter.ai/typesafe/jev-1.13)).
+
+### Pinned model ids
+
+Checked against the OpenRouter Free Models Router and Auto Router docs.
+
+| Layer | Exact model id | Role |
+| --- | --- | --- |
+| System 1 (Jev) | `typesafe/jev-1.13` | Typed decisions on `POST /api/alpha/decisions`. Separate from System 2. |
+| System 2 free router | `openrouter/free` | **Default** chat draft. Zero-price router over currently free models. |
+| System 2 auto router | `openrouter/auto` | Opt-in chat draft. **Not the default**: OpenRouter bills the model it selects (no router surcharge). |
+
+`SYSTEM2_MODEL` may be `openrouter/free`, `openrouter/auto`, or a specific free variant such as `meta-llama/llama-3.2-3b-instruct:free`. A paid id such as `openai/gpt-4o-mini` is not sent; the bus uses `openrouter/free` instead.
 
 ```bash
 export OPENROUTER_API_KEY=sk-or-...   # from https://openrouter.ai/settings/keys
 export SYSTEM1_BACKEND=openrouter_jev # mock | laya | openrouter_jev
 export SYSTEM1_JEV_MODEL=typesafe/jev-1.13   # optional; this is the default
-export SYSTEM2_MODEL=openrouter/free         # optional; free-router default, or a pinned model:free
+export SYSTEM2_MODEL=openrouter/free         # or openrouter/auto, or a :free id
 make -C web run
 ```
 

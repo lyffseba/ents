@@ -88,7 +88,8 @@ def draft_text(system: str, prompt: str) -> tuple[str, str]:
     """System 2 draft. OpenRouter chat when a key is set, otherwise demo-safe Gemini.
 
     No key skips the OpenRouter call entirely. The default chat model is
-    ``openrouter/free`` (override with ``SYSTEM2_MODEL``).
+    ``openrouter/free``. ``SYSTEM2_MODEL`` may be ``openrouter/free``,
+    ``openrouter/auto``, or a ``:free`` model. Other ids are not sent.
     """
     if openrouter_api_key():
         try:
