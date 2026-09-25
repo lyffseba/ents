@@ -36,6 +36,8 @@ from web.system1.flows import tutor_state  # noqa: E402
 from web.system1.gate import auto_cost_tier, classify_route  # noqa: E402
 from web.system1.bus import session_id_from_state  # noqa: E402
 from web.system1.questions import normalize_questions  # noqa: E402
+from web.deps import SessionLocal  # noqa: E402
+from web.models import AgentDecision  # noqa: E402
 from web.system1 import decide_flow  # noqa: E402
 
 _GEMINI_CALLS = {"n": 0}
@@ -605,6 +607,21 @@ class OpenRouterBackendTests(_EnvGuard):
         self.assertEqual(outcome["draft_model"], "anthropic/claude-sonnet-4.5")
         self.assertEqual(outcome["cost_tier"], "max")
         self.assertEqual(outcome["model"], "typesafe/jev-1.13-20260917")
+        db = SessionLocal()
+        try:
+            row = (
+                db.query(AgentDecision)
+                .filter(AgentDecision.agent_name == "System1")
+                .order_by(AgentDecision.id.desc())
+                .first()
+            )
+        finally:
+            db.close()
+        self.assertIn("draft_model=anthropic/claude-sonnet-4.5", row.decision)
+        stored = json.loads(row.gemini_prompt_summary)
+        self.assertEqual(stored["draft_model"], "anthropic/claude-sonnet-4.5")
+        self.assertEqual(stored["model"], "anthropic/claude-sonnet-4.5")
+        self.assertEqual(stored["system1_model"], "typesafe/jev-1.13-20260917")
 
     def test_free_override_omits_the_auto_plugin(self):
         os.environ["OPENROUTER_API_KEY"] = "sk-or-test"
@@ -620,6 +637,33 @@ class OpenRouterBackendTests(_EnvGuard):
         self.assertEqual(captured["json"]["model"], "openrouter/free")
         self.assertNotIn("plugins", captured["json"])
         self.assertEqual(outcome["text"], "Zero-cost draft.")
+
+    def test_explicit_session_id_overrides_state_and_is_accepted_by_decide(self):
+        os.environ["OPENROUTER_API_KEY"] = "sk-or-test"
+        captured = {}
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            captured["json"] = json
+            return _FakeResponse(_chat_payload("Sticky draft."))
+
+        with patch("httpx.post", side_effect=fake_post):
+            outcome = decide_flow(
+                "tutor",
+                {"question": "???", "session_id": "from-state"},
+                session_id=" from-caller ",
+            )
+        self.assertEqual(captured["json"]["session_id"], "from-caller")
+        self.assertEqual(outcome["session_id"], "from-caller")
+
+        with patch("httpx.post", side_effect=fake_post):
+            response = _CLIENT.post("/system1/decide", json={
+                "state": {"question": "Explain this in a new way"},
+                "flow": "tutor",
+                "session_id": " tutor-session ",
+            })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(captured["json"]["session_id"], "tutor-session")
+        self.assertEqual(response.json()["session_id"], "tutor-session")
 
     def test_cost_tier_override_wins_over_urgency(self):
         os.environ["SYSTEM2_COST_TIER"] = "medium"
@@ -682,6 +726,8 @@ class OpenRouterLiveSmokeTests(_EnvGuard):
         self.assertIn("typesafe/jev-1.13", readme)
         self.assertIn("System 2 default is `openrouter/auto`", readme)
         self.assertIn("Zero-cost override: `openrouter/free`", readme)
+        self.assertIn("random free model", readme)
+        self.assertIn("no Auto surcharge", readme)
         self.assertIn("auto-router", readme)
         self.assertIn("cost_tier", readme)
         self.assertIn("session_id", readme)

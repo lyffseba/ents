@@ -162,11 +162,13 @@ Checked against the [Auto Router](https://openrouter.ai/docs/guides/routing/rout
 | --- | --- | --- |
 | System 1 (Jev) | `typesafe/jev-1.13` | Typed decisions on `POST /api/alpha/decisions` only. Chat ids are rejected. |
 | System 2 auto router | `openrouter/auto` | **Default** chat draft. Classifies the prompt, ranks by 7-day market spend, then applies `cost_tier`. You pay the selected model's rate. Auto has no surcharge. `response.model` is the model that answered. |
-| System 2 free router | `openrouter/free` | **Zero-cost override** (`SYSTEM2_MODEL=openrouter/free`). Not the default. |
+| System 2 free router | `openrouter/free` | **Zero-cost override** (`SYSTEM2_MODEL=openrouter/free`). Picks a random free model. Not the default. |
 
 System 2 default is `openrouter/auto`. Zero-cost override: `openrouter/free`.
 
-Auto chat requests send `plugins: [{id: "auto-router", cost_tier: ...}]`. Unset `cost_tier` on OpenRouter means about `low`; this bus always sends a tier. `session_id` is included when the state has `session_id` (or a retention learner `id`). A fixed paid slug such as `openai/gpt-4o-mini` is not sent.
+Auto pays the rate of the model it selects. There is no Auto surcharge. `openrouter/free` picks a random free model and costs $0.
+
+Auto chat requests send `plugins: [{id: "auto-router", cost_tier: ...}]`. Unset `cost_tier` on OpenRouter means about `low`; this bus always sends a tier. `session_id` is included when the caller passes one, when the state has `session_id`, or when a retention learner `id` is present. The chat response `model` (the model that actually answered) is stored as `draft_model` on the decision, including the `/ops` log line. A fixed paid slug such as `openai/gpt-4o-mini` is not sent.
 
 ```bash
 export OPENROUTER_API_KEY=sk-or-...   # from https://openrouter.ai/settings/keys
@@ -199,7 +201,8 @@ A direct decision:
 ```bash
 curl -s localhost:8000/system1/decide -H 'content-type: application/json' -d '{
   "state": "What is softmax?",
-  "flow": "tutor"
+  "flow": "tutor",
+  "session_id": "tutor-demo"
 }'
 ```
 

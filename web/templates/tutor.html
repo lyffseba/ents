@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <h1 class="text-3xl">🌿 Treebeard's Tutor</h1>
-<p class="text-green-300">A System 1 gate answers high-confidence questions from a fixed route. Open questions draft with OpenRouter or Gemini when a key is set; demo mode still answers without one. Every gate decision is logged on /ops.</p>
+<p class="text-green-300">A System 1 gate answers high-confidence questions from a fixed route. Open questions draft with OpenRouter Auto when a key is set (SYSTEM2_MODEL=openrouter/free picks a random free model). Demo mode still answers without a key. The model that answered is logged on /ops.</p>
 
 <form id="tutor-form" class="mt-6 flex gap-2">
   <input name="question" class="flex-1 bg-black border border-green-800 p-3 rounded" placeholder="Why does softmax turn logits into probabilities that sum to 1?"/>
@@ -18,8 +18,9 @@ form.addEventListener('submit', async (e) => {
   const res = await fetch('/tutor/ask', {method:'POST', body: new URLSearchParams({question: q})});
   const data = await res.json();
   const s1 = data.system1;
+  const routed = s1 && s1.draft_model ? ` · ${s1.draft_model}` : "";
   const meta = s1
-    ? `System 1 ${s1.backend} · ${s1.route} · confidence ${Number(s1.confidence).toFixed(2)}\n\n`
+    ? `System 1 ${s1.backend} · ${s1.route} · confidence ${Number(s1.confidence).toFixed(2)}${routed}\n\n`
     : "";
   document.getElementById('answer').textContent = meta + (data.answer || "");
 });

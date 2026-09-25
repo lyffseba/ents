@@ -34,7 +34,7 @@ def status() -> dict:
     }
 
 
-def decide_flow(flow: str, state: Any) -> dict:
+def decide_flow(flow: str, state: Any, *, session_id: str | None = None) -> dict:
     """Score a named Academy flow (``tutor`` or ``retention``)."""
     try:
         spec = get_flow(flow)
@@ -46,6 +46,7 @@ def decide_flow(flow: str, state: Any) -> dict:
         flow=flow,
         render=spec["render"],
         draft=spec["draft"],
+        session_id=session_id,
     )
 
 
@@ -56,6 +57,7 @@ def decide(
     flow: str = "raw",
     render=None,
     draft=None,
+    session_id: str | None = None,
 ) -> dict:
     """Score questions, gate on confidence, and log one System 1 row."""
     normalized = normalize_questions(questions)
@@ -73,7 +75,13 @@ def decide(
         text = (render or render_raw)(state, answers)
     else:
         system, prompt = (draft or draft_raw)(state, answers, reason)
-        text, provider, draft_meta = draft_text(system, prompt, answers=answers, state=state)
+        text, provider, draft_meta = draft_text(
+            system,
+            prompt,
+            answers=answers,
+            state=state,
+            session_id=session_id,
+        )
     outcome = {
         "text": text,
         "route": route,
@@ -101,14 +109,15 @@ def draft_text(
     *,
     answers: dict | None = None,
     state: Any = None,
+    session_id: str | None = None,
 ) -> tuple[str, str, dict]:
     """System 2 draft. OpenRouter chat when a key is set, otherwise demo-safe Gemini.
 
     No key skips the OpenRouter call. The default chat model is
     ``openrouter/auto``. ``openrouter/free`` is the zero-cost override.
-    Auto requests send plugin ``auto-router`` with a ``cost_tier`` and
-    ``session_id`` when the state has one. Typed System 1 calls never
-    come through here.
+    Auto requests send plugin ``auto-router`` with a ``cost_tier``.
+    ``session_id`` is the explicit argument when set, otherwise one taken
+    from the state. Typed System 1 calls never come through here.
     """
     meta = {
         "requested_model": None,
@@ -117,7 +126,7 @@ def draft_text(
         "session_id": None,
     }
     if openrouter_api_key():
-        body = _chat_request(system, prompt, answers, state)
+        body = _chat_request(system, prompt, answers, state, session_id=session_id)
         meta["requested_model"] = body["model"]
         meta["session_id"] = body.get("session_id")
         plugins = body.get("plugins") or []
@@ -156,7 +165,21 @@ def session_id_from_state(state: Any) -> str | None:
     return None
 
 
-def _chat_request(system: str, prompt: str, answers: dict | None, state: Any) -> dict:
+def resolve_session_id(explicit: str | None, state: Any) -> str | None:
+    """Stickiness key. An explicit id wins; otherwise read one from ``state``."""
+    if isinstance(explicit, str) and explicit.strip():
+        return explicit.strip()[:200]
+    return session_id_from_state(state)
+
+
+def _chat_request(
+    system: str,
+    prompt: str,
+    answers: dict | None,
+    state: Any,
+    *,
+    session_id: str | None = None,
+) -> dict:
     model = system2_model()
     body: dict = {
         "model": model,
@@ -165,7 +188,7 @@ def _chat_request(system: str, prompt: str, answers: dict | None, state: Any) ->
             {"role": "user", "content": prompt},
         ],
     }
-    session = session_id_from_state(state)
+    session = resolve_session_id(session_id, state)
     if session:
         body["session_id"] = session
     if model == SYSTEM2_AUTO_MODEL:
@@ -228,8 +251,17 @@ def _log(outcome: dict, state: Any) -> None:
         action = "system1:deterministic"
     else:
         action = f"system1:generative:{provider or 'unknown'}"
+    # Routed model leads so the stored summary keeps response.model if truncated.
     summary = json.dumps(
-        {"flow": outcome["flow"], "state": state_preview(state), "model": outcome.get("model")},
+        {
+            "draft_model": outcome.get("draft_model"),
+            "model": outcome.get("draft_model") or outcome.get("model"),
+            "system1_model": outcome.get("model"),
+            "cost_tier": outcome.get("cost_tier"),
+            "session_id": outcome.get("session_id"),
+            "flow": outcome["flow"],
+            "state": state_preview(state),
+        },
         default=str,
     )
     try:

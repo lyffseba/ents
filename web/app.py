@@ -95,10 +95,10 @@ async def tutor_page(request: Request):
     return templates.TemplateResponse(request, "tutor.html", {})
 
 @app.post("/tutor/ask")
-async def tutor_ask(question: str = Form(...)):
+async def tutor_ask(question: str = Form(...), session_id: str = Form("")):
     """System 1 gate in front of the tutor. High confidence skips the LLM."""
     from .system1.flows import tutor_state
-    outcome = decide_flow("tutor", tutor_state(question))
+    outcome = decide_flow("tutor", tutor_state(question), session_id=session_id or None)
     return {
         "answer": outcome["text"],
         "timestamp": datetime.datetime.utcnow().isoformat(),
@@ -198,16 +198,19 @@ async def system1_decide(request: Request):
         raise HTTPException(400, "state is required")
     flow = body.get("flow")
     questions = body.get("questions")
+    raw_session = body.get("session_id")
+    session_id = raw_session.strip() if isinstance(raw_session, str) and raw_session.strip() else None
     try:
         if questions is None:
             if not flow:
                 raise QuestionError("pass flow (tutor|retention) or questions")
-            outcome = decide_flow(str(flow), state)
+            outcome = decide_flow(str(flow), state, session_id=session_id)
         else:
             outcome = decide(
                 state,
                 questions,
                 flow=str(flow or "raw"),
+                session_id=session_id,
             )
     except QuestionError as exc:
         raise HTTPException(400, str(exc)) from exc
