@@ -289,6 +289,16 @@ class OpenRouterBackendTests(_EnvGuard):
         self.assertEqual(system1_jev_model(), "typesafe/jev-1.13")
         self.assertEqual(system2_model(), "openrouter/free")
 
+    def test_system2_allows_free_router_auto_router_and_free_suffix_only(self):
+        os.environ["SYSTEM2_MODEL"] = "openrouter/auto"
+        self.assertEqual(system2_model(), "openrouter/auto")
+        os.environ["SYSTEM2_MODEL"] = "meta-llama/llama-3.2-3b-instruct:free"
+        self.assertEqual(system2_model(), "meta-llama/llama-3.2-3b-instruct:free")
+        os.environ["SYSTEM2_MODEL"] = "openai/gpt-4o-mini"
+        self.assertEqual(system2_model(), "openrouter/free")
+        os.environ["SYSTEM2_MODEL"] = "openrouter/auto-beta"
+        self.assertEqual(system2_model(), "openrouter/free")
+
     def test_jev_posts_decisions_and_normalizes_typed_answers(self):
         os.environ["SYSTEM1_BACKEND"] = "openrouter_jev"
         os.environ["OPENROUTER_API_KEY"] = "sk-or-test"
@@ -409,6 +419,36 @@ class OpenRouterBackendTests(_EnvGuard):
         self.assertEqual(outcome["generative_provider"], "openrouter")
         self.assertEqual(outcome["text"], "Pinned free draft.")
 
+    def test_auto_router_override_is_sent_to_chat(self):
+        os.environ["OPENROUTER_API_KEY"] = "sk-or-test"
+        os.environ["SYSTEM2_MODEL"] = "openrouter/auto"
+        captured = {}
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            captured["model"] = json["model"]
+            return _FakeResponse(_chat_payload("Auto-routed draft."))
+
+        with patch("httpx.post", side_effect=fake_post):
+            outcome = decide_flow("tutor", tutor_state("???"))
+        self.assertEqual(captured["model"], "openrouter/auto")
+        self.assertEqual(outcome["generative_provider"], "openrouter")
+        self.assertEqual(outcome["text"], "Auto-routed draft.")
+
+    def test_paid_system2_model_is_not_sent(self):
+        os.environ["OPENROUTER_API_KEY"] = "sk-or-test"
+        os.environ["SYSTEM2_MODEL"] = "openai/gpt-4o-mini"
+        captured = {}
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            captured["model"] = json["model"]
+            return _FakeResponse(_chat_payload("Free draft."))
+
+        with patch("httpx.post", side_effect=fake_post):
+            outcome = decide_flow("tutor", tutor_state("???"))
+        self.assertEqual(captured["model"], "openrouter/free")
+        self.assertEqual(outcome["text"], "Free draft.")
+        self.assertNotIn("gpt-4o-mini", captured["model"])
+
     def test_chat_http_error_falls_back_to_demo_draft(self):
         os.environ["OPENROUTER_API_KEY"] = "sk-or-test"
         before = _GEMINI_CALLS["n"]
@@ -506,7 +546,9 @@ class OpenRouterLiveSmokeTests(_EnvGuard):
         readme = (ROOT / "README.md").read_text()
         self.assertIn("python -m web.system1.live --draft", readme)
         self.assertIn("typesafe/jev-1.13", readme)
-        self.assertIn("openrouter/free", readme)
+        self.assertIn("`openrouter/free`", readme)
+        self.assertIn("`openrouter/auto`", readme)
+        self.assertIn("not the default", readme.lower())
 
     def test_missing_key_skips_the_network(self):
         main = self._main()
