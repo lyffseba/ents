@@ -86,43 +86,61 @@ def system1_needs_generation_threshold() -> float:
     return value
 
 
-def system1_jev_model() -> str:
-    return os.getenv("SYSTEM1_JEV_MODEL", "typesafe/jev-1.13").strip() or "typesafe/jev-1.13"
-
-
 # Pinned against OpenRouter docs (2026-09-25):
-# https://openrouter.ai/docs/guides/routing/routers/free-router
 # https://openrouter.ai/docs/guides/routing/routers/auto-router
-# Free router is zero-price. Auto selects a model from market spend and bills
-# that model's rate, so it is opt-in and never the default.
+# https://openrouter.ai/docs/guides/routing/routers/free-router
+# Auto is the System 2 default. It bills the selected model's rate and adds
+# no surcharge. Free is the zero-cost override. Neither id is a Jev model.
 SYSTEM2_FREE_MODEL = "openrouter/free"
 SYSTEM2_AUTO_MODEL = "openrouter/auto"
+_SYSTEM1_JEV_DEFAULT = "typesafe/jev-1.13"
+_CHAT_ROUTER_IDS = {SYSTEM2_FREE_MODEL, SYSTEM2_AUTO_MODEL, "openrouter/auto-beta"}
+
+
+def system1_jev_model() -> str:
+    """Typed-decision model. Chat routers are rejected so Auto never scores System 1."""
+    raw = os.getenv("SYSTEM1_JEV_MODEL", "").strip() or _SYSTEM1_JEV_DEFAULT
+    if raw in _CHAT_ROUTER_IDS or raw.endswith(":free"):
+        print(f"[SYSTEM1] SYSTEM1_JEV_MODEL={raw!r} is a chat model; using {_SYSTEM1_JEV_DEFAULT}")
+        return _SYSTEM1_JEV_DEFAULT
+    return raw
 
 
 def system2_model_allowed(model: str) -> bool:
-    """System 2 may only call the free router, the auto router, or a ``:free`` model."""
+    """System 2 may call Auto, the free router, or a ``:free`` model. Not a fixed paid id."""
     if model in {SYSTEM2_FREE_MODEL, SYSTEM2_AUTO_MODEL}:
         return True
     return model.endswith(":free") and not model.startswith(":")
 
 
 def system2_model() -> str:
-    """Chat model for escalations. Default is the free router, never a paid id.
+    """Chat model for escalations. Default ``openrouter/auto``.
 
-    ``SYSTEM2_MODEL=openrouter/free``, ``openrouter/auto``, or a ``:free`` model
-    id is sent as-is. Any other value (including paid chat models) is ignored
-    and ``openrouter/free`` is used instead. Jev stays on ``SYSTEM1_JEV_MODEL``.
+    ``SYSTEM2_MODEL=openrouter/free`` is the zero-cost lane. A ``:free`` id is
+    also sent as-is. Any other value is ignored and ``openrouter/auto`` is used.
+    Jev stays on ``system1_jev_model()``.
     """
     raw = os.getenv("SYSTEM2_MODEL", "").strip()
-    if not raw or raw == SYSTEM2_FREE_MODEL:
-        return SYSTEM2_FREE_MODEL
+    if not raw:
+        return SYSTEM2_AUTO_MODEL
     if system2_model_allowed(raw):
         return raw
     print(
-        f"[SYSTEM1] SYSTEM2_MODEL={raw!r} is not {SYSTEM2_FREE_MODEL}, "
-        f"{SYSTEM2_AUTO_MODEL}, or a :free model; using {SYSTEM2_FREE_MODEL}"
+        f"[SYSTEM1] SYSTEM2_MODEL={raw!r} is not {SYSTEM2_AUTO_MODEL}, "
+        f"{SYSTEM2_FREE_MODEL}, or a :free model; using {SYSTEM2_AUTO_MODEL}"
     )
-    return SYSTEM2_FREE_MODEL
+    return SYSTEM2_AUTO_MODEL
+
+
+def system2_cost_tier_override() -> str | None:
+    """Explicit Auto ``cost_tier``, or None so the gate maps urgency/confidence."""
+    raw = os.getenv("SYSTEM2_COST_TIER", "").strip().lower()
+    if not raw:
+        return None
+    if raw in {"low", "medium", "high", "xhigh", "max"}:
+        return raw
+    print(f"[SYSTEM1] SYSTEM2_COST_TIER={raw!r} is not a cost tier; mapping from System 1")
+    return None
 
 
 def openrouter_decisions_url() -> str:

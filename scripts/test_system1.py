@@ -33,7 +33,8 @@ from web.agents import content as content_agent  # noqa: E402
 from web.config import system1_jev_model, system2_model  # noqa: E402
 from web.system1.backends import laya_importable, predict, reset_backend_state  # noqa: E402
 from web.system1.flows import tutor_state  # noqa: E402
-from web.system1.gate import classify_route  # noqa: E402
+from web.system1.gate import auto_cost_tier, classify_route  # noqa: E402
+from web.system1.bus import session_id_from_state  # noqa: E402
 from web.system1.questions import normalize_questions  # noqa: E402
 from web.system1 import decide_flow  # noqa: E402
 
@@ -84,6 +85,7 @@ class _EnvGuard(unittest.TestCase):
                 "SYSTEM1_NEEDS_GENERATION",
                 "SYSTEM1_JEV_MODEL",
                 "SYSTEM2_MODEL",
+                "SYSTEM2_COST_TIER",
                 "OPENROUTER_DECISIONS_URL",
                 "OPENROUTER_CHAT_URL",
             )
@@ -94,6 +96,7 @@ class _EnvGuard(unittest.TestCase):
         os.environ.pop("SYSTEM1_NEEDS_GENERATION", None)
         os.environ.pop("SYSTEM1_JEV_MODEL", None)
         os.environ.pop("SYSTEM2_MODEL", None)
+        os.environ.pop("SYSTEM2_COST_TIER", None)
         os.environ.pop("OPENROUTER_DECISIONS_URL", None)
         os.environ.pop("OPENROUTER_CHAT_URL", None)
 
@@ -285,19 +288,25 @@ def _chat_payload(text="A drafted hint about shapes."):
 
 
 class OpenRouterBackendTests(_EnvGuard):
-    def test_default_models_pin_jev_and_the_free_router(self):
+    def test_default_models_pin_jev_and_the_auto_router(self):
         self.assertEqual(system1_jev_model(), "typesafe/jev-1.13")
-        self.assertEqual(system2_model(), "openrouter/free")
-
-    def test_system2_allows_free_router_auto_router_and_free_suffix_only(self):
-        os.environ["SYSTEM2_MODEL"] = "openrouter/auto"
         self.assertEqual(system2_model(), "openrouter/auto")
+
+    def test_system2_allows_auto_free_router_and_free_suffix_only(self):
+        os.environ["SYSTEM2_MODEL"] = "openrouter/free"
+        self.assertEqual(system2_model(), "openrouter/free")
         os.environ["SYSTEM2_MODEL"] = "meta-llama/llama-3.2-3b-instruct:free"
         self.assertEqual(system2_model(), "meta-llama/llama-3.2-3b-instruct:free")
         os.environ["SYSTEM2_MODEL"] = "openai/gpt-4o-mini"
-        self.assertEqual(system2_model(), "openrouter/free")
+        self.assertEqual(system2_model(), "openrouter/auto")
         os.environ["SYSTEM2_MODEL"] = "openrouter/auto-beta"
-        self.assertEqual(system2_model(), "openrouter/free")
+        self.assertEqual(system2_model(), "openrouter/auto")
+
+    def test_jev_model_rejects_chat_routers(self):
+        os.environ["SYSTEM1_JEV_MODEL"] = "openrouter/auto"
+        self.assertEqual(system1_jev_model(), "typesafe/jev-1.13")
+        os.environ["SYSTEM1_JEV_MODEL"] = "openrouter/free"
+        self.assertEqual(system1_jev_model(), "typesafe/jev-1.13")
 
     def test_jev_posts_decisions_and_normalizes_typed_answers(self):
         os.environ["SYSTEM1_BACKEND"] = "openrouter_jev"
@@ -318,6 +327,9 @@ class OpenRouterBackendTests(_EnvGuard):
         self.assertEqual(captured["url"], "https://openrouter.ai/api/alpha/decisions")
         self.assertEqual(captured["headers"]["Authorization"], "Bearer sk-or-test")
         self.assertEqual(captured["json"]["model"], "typesafe/jev-1.13")
+        self.assertNotIn("plugins", captured["json"])
+        self.assertNotIn("session_id", captured["json"])
+        self.assertNotEqual(captured["json"]["model"], "openrouter/auto")
         self.assertEqual(captured["json"]["state"], "Please refund the duplicate invoice payment")
         self.assertEqual(captured["json"]["questions"]["department"]["type"], "choice")
         self.assertEqual(result["backend"], "openrouter_jev")
@@ -395,7 +407,11 @@ class OpenRouterBackendTests(_EnvGuard):
         self.assertEqual(body["system1"]["generative_provider"], "openrouter")
         self.assertEqual(body["answer"], "A drafted hint about shapes.")
         self.assertEqual(captured["url"], "https://openrouter.ai/api/v1/chat/completions")
-        self.assertEqual(captured["json"]["model"], "openrouter/free")
+        self.assertEqual(captured["json"]["model"], "openrouter/auto")
+        plugin = captured["json"]["plugins"][0]
+        self.assertEqual(plugin["id"], "auto-router")
+        self.assertIn(plugin["cost_tier"], ("low", "medium", "high", "xhigh", "max"))
+        self.assertNotIn("session_id", captured["json"])
         self.assertEqual(captured["headers"]["Authorization"], "Bearer sk-or-test")
         self.assertEqual(
             [message["role"] for message in captured["json"]["messages"]],
@@ -445,7 +461,7 @@ class OpenRouterBackendTests(_EnvGuard):
 
         with patch("httpx.post", side_effect=fake_post):
             outcome = decide_flow("tutor", tutor_state("???"))
-        self.assertEqual(captured["model"], "openrouter/free")
+        self.assertEqual(captured["model"], "openrouter/auto")
         self.assertEqual(outcome["text"], "Free draft.")
         self.assertNotIn("gpt-4o-mini", captured["model"])
 
@@ -470,8 +486,7 @@ class OpenRouterBackendTests(_EnvGuard):
 
         def fake_post(url, headers=None, json=None, timeout=None):
             captured["url"] = url
-            captured["model"] = json["model"]
-            captured["system"] = json["messages"][0]["content"]
+            captured["json"] = json
             return _FakeResponse(_chat_payload("Come back to the trial. Check the softmax axis."))
 
         with patch("httpx.post", side_effect=fake_post):
@@ -481,8 +496,9 @@ class OpenRouterBackendTests(_EnvGuard):
         self.assertEqual(outcome["generative_provider"], "openrouter")
         self.assertEqual(outcome["text"], "Come back to the trial. Check the softmax axis.")
         self.assertIn("/chat/completions", captured["url"])
-        self.assertEqual(captured["model"], "openrouter/free")
-        self.assertIn("Retention", captured["system"])
+        self.assertEqual(captured["json"]["model"], "openrouter/auto")
+        self.assertEqual(captured["json"]["plugins"][0]["id"], "auto-router")
+        self.assertIn("Retention", captured["json"]["messages"][0]["content"])
         self.assertEqual(_GEMINI_CALLS["n"], before)
 
     def test_low_confidence_jev_escalates_to_chat_and_high_confidence_does_not(self):
@@ -534,6 +550,124 @@ class OpenRouterBackendTests(_EnvGuard):
         self.assertEqual(sum(1 for url in calls if "decisions" in url), 2)
         self.assertEqual(sum(1 for url in calls if "chat/completions" in url), 1)
 
+    def test_auto_draft_maps_urgency_to_cost_tier_and_passes_session_id(self):
+        os.environ["SYSTEM1_BACKEND"] = "openrouter_jev"
+        os.environ["OPENROUTER_API_KEY"] = "sk-or-test"
+        calls = []
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            calls.append((url, json))
+            if "decisions" in url:
+                return _FakeResponse({
+                    "model": "typesafe/jev-1.13-20260917",
+                    "answers": {
+                        "intervention": {
+                            "type": "choice",
+                            "choice": "nudge",
+                            "confidence": 0.4,
+                            "probabilities": {"nudge": 0.4, "discount": 0.2, "tutor_handoff": 0.2, "wait": 0.2},
+                        },
+                        "urgency": {
+                            "type": "score",
+                            "score": 2.0,
+                            "confidence": 0.99,
+                            "probabilities": {"0": 0.0, "1": 0.0, "2": 1.0},
+                        },
+                        "churn_risk": {"type": "noul", "noul": 0.2},
+                        "needs_generation": {"type": "noul", "noul": 0.9},
+                    },
+                })
+            return _FakeResponse({
+                "model": "anthropic/claude-sonnet-4.5",
+                "choices": [{"message": {"role": "assistant", "content": "Come back this week."}}],
+            })
+
+        state = {
+            "id": 42,
+            "email": "slow@ent.dev",
+            "phase": "01",
+            "text": "cancel tomorrow",
+            "session_id": "learner-42",
+        }
+        with patch("httpx.post", side_effect=fake_post):
+            outcome = decide_flow("retention", state)
+
+        decisions = calls[0][1]
+        chat = calls[1][1]
+        self.assertEqual(decisions["model"], "typesafe/jev-1.13")
+        self.assertNotIn("plugins", decisions)
+        self.assertNotEqual(calls[0][0].rstrip("/").endswith("chat/completions"), True)
+        self.assertIn("decisions", calls[0][0])
+        self.assertEqual(chat["model"], "openrouter/auto")
+        self.assertEqual(chat["session_id"], "learner-42")
+        self.assertEqual(chat["plugins"], [{"id": "auto-router", "cost_tier": "max"}])
+        self.assertEqual(outcome["generative_provider"], "openrouter")
+        self.assertEqual(outcome["draft_model"], "anthropic/claude-sonnet-4.5")
+        self.assertEqual(outcome["cost_tier"], "max")
+        self.assertEqual(outcome["model"], "typesafe/jev-1.13-20260917")
+
+    def test_free_override_omits_the_auto_plugin(self):
+        os.environ["OPENROUTER_API_KEY"] = "sk-or-test"
+        os.environ["SYSTEM2_MODEL"] = "openrouter/free"
+        captured = {}
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            captured["json"] = json
+            return _FakeResponse(_chat_payload("Zero-cost draft."))
+
+        with patch("httpx.post", side_effect=fake_post):
+            outcome = decide_flow("tutor", tutor_state("???"))
+        self.assertEqual(captured["json"]["model"], "openrouter/free")
+        self.assertNotIn("plugins", captured["json"])
+        self.assertEqual(outcome["text"], "Zero-cost draft.")
+
+    def test_cost_tier_override_wins_over_urgency(self):
+        os.environ["SYSTEM2_COST_TIER"] = "medium"
+        answers = {
+            "urgency": {
+                "score": 2.0,
+                "confidence": 0.99,
+                "probabilities": {"0": 0.0, "1": 0.0, "2": 1.0},
+            },
+        }
+        self.assertEqual(auto_cost_tier(answers), "medium")
+
+
+class AutoCostTierTests(_EnvGuard):
+    def test_missing_score_is_low(self):
+        self.assertEqual(auto_cost_tier({}), "low")
+        self.assertEqual(auto_cost_tier({"intent": {"choice": "open", "confidence": 0.2}}), "low")
+
+    def test_urgency_bands_and_low_confidence_step_down(self):
+        peaked = {"0": 0.0, "1": 0.0, "2": 1.0}
+        self.assertEqual(auto_cost_tier({
+            "urgency": {"score": 0.2, "confidence": 0.9, "probabilities": {"0": 0.9, "1": 0.1, "2": 0.0}},
+        }), "low")
+        self.assertEqual(auto_cost_tier({
+            "urgency": {"score": 1.0, "confidence": 0.9, "probabilities": {"0": 0.0, "1": 1.0, "2": 0.0}},
+        }), "high")
+        self.assertEqual(auto_cost_tier({
+            "urgency": {"score": 2.0, "confidence": 0.99, "probabilities": peaked},
+        }), "max")
+        self.assertEqual(auto_cost_tier({
+            "urgency": {"score": 2.0, "confidence": 0.2, "probabilities": peaked},
+        }), "xhigh")
+
+    def test_urgency_wins_over_difficulty(self):
+        self.assertEqual(auto_cost_tier({
+            "difficulty": {"score": 0.0, "confidence": 0.9, "probabilities": {"0": 1, "1": 0, "2": 0}},
+            "urgency": {"score": 2.0, "confidence": 0.9, "probabilities": {"0": 0, "1": 0, "2": 1}},
+        }), "max")
+
+    def test_session_id_uses_explicit_id_then_learner_id(self):
+        self.assertIsNone(session_id_from_state("What is softmax?"))
+        self.assertIsNone(session_id_from_state({"question": "???"}))
+        self.assertEqual(session_id_from_state({"session_id": " conv-9 "}), "conv-9")
+        self.assertEqual(
+            session_id_from_state({"id": 42, "email": "slow@ent.dev", "phase": "01"}),
+            "learner:42",
+        )
+
 
 class OpenRouterLiveSmokeTests(_EnvGuard):
     """``python -m web.system1.live`` is opt-in. Default CI never calls OpenRouter."""
@@ -546,9 +680,12 @@ class OpenRouterLiveSmokeTests(_EnvGuard):
         readme = (ROOT / "README.md").read_text()
         self.assertIn("python -m web.system1.live --draft", readme)
         self.assertIn("typesafe/jev-1.13", readme)
-        self.assertIn("`openrouter/free`", readme)
-        self.assertIn("`openrouter/auto`", readme)
-        self.assertIn("not the default", readme.lower())
+        self.assertIn("System 2 default is `openrouter/auto`", readme)
+        self.assertIn("Zero-cost override: `openrouter/free`", readme)
+        self.assertIn("auto-router", readme)
+        self.assertIn("cost_tier", readme)
+        self.assertIn("session_id", readme)
+        self.assertIn("typesafe/jev-1.13", readme)
 
     def test_missing_key_skips_the_network(self):
         main = self._main()
@@ -593,7 +730,8 @@ class OpenRouterLiveSmokeTests(_EnvGuard):
         self.assertEqual(report["backend"], "openrouter_jev")
         self.assertEqual(report["jev_model"], "typesafe/jev-1.13")
         self.assertEqual(report["served_model"], "typesafe/jev-1.13-20260917")
-        self.assertEqual(report["system2_model"], "openrouter/free")
+        self.assertEqual(report["system2_model"], "openrouter/auto")
+        self.assertEqual(report["cost_tier"], "low")
         self.assertEqual(report["answers"]["department"]["choice"], "billing")
         self.assertIsNone(report["draft"])
         self.assertNotIn("sk-or-live", stdout.getvalue())
@@ -630,10 +768,16 @@ class OpenRouterLiveSmokeTests(_EnvGuard):
         self.assertEqual(len(captured), 2)
         self.assertIn("/api/alpha/decisions", captured[0]["url"])
         self.assertIn("/chat/completions", captured[1]["url"])
-        self.assertEqual(captured[1]["json"]["model"], "openrouter/free")
+        self.assertEqual(captured[1]["json"]["model"], "openrouter/auto")
+        self.assertEqual(
+            captured[1]["json"]["plugins"],
+            [{"id": "auto-router", "cost_tier": "low"}],
+        )
+        self.assertNotIn("session_id", captured[1]["json"])
         report = json.loads(stdout.getvalue())
         self.assertEqual(report["draft"]["provider"], "openrouter")
-        self.assertEqual(report["draft"]["model"], "openrouter/free")
+        self.assertEqual(report["draft"]["model"], "openrouter/auto")
+        self.assertEqual(report["draft"]["cost_tier"], "low")
         self.assertEqual(report["draft"]["text"], "Refund the duplicate charge.")
         self.assertNotIn("sk-or-live", stdout.getvalue())
 

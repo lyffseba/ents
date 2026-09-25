@@ -243,6 +243,10 @@ def _public_system1(outcome: dict, include_text: bool = False) -> dict:
         "answers": outcome["answers"],
         "generative_provider": outcome["generative_provider"],
         "flow": outcome["flow"],
+        "system2_model": outcome.get("system2_model"),
+        "cost_tier": outcome.get("cost_tier"),
+        "session_id": outcome.get("session_id"),
+        "draft_model": outcome.get("draft_model"),
     }
     if include_text:
         payload["text"] = outcome["text"]

@@ -1,4 +1,4 @@
-"""Opt-in live smoke for OpenRouter Jev and the free System 2 draft.
+"""Opt-in live smoke for OpenRouter Jev and a System 2 chat draft.
 
 Default CI does not run this module. It talks to OpenRouter only when
 ``OPENROUTER_API_KEY`` is set and someone invokes it:
@@ -8,8 +8,9 @@ Default CI does not run this module. It talks to OpenRouter only when
 
 The command forces ``SYSTEM1_BACKEND=openrouter_jev`` so a mock setting in
 the shell cannot hide a failed live call. ``--draft`` also calls chat
-completions with ``SYSTEM2_MODEL`` (default ``openrouter/free``). Without
-the flag, only the Jev decision is sent.
+completions. System 2 default is ``openrouter/auto``; set
+``SYSTEM2_MODEL=openrouter/free`` for the zero-cost lane. Without the
+flag, only the Jev decision is sent. Jev never uses the Auto chat model.
 """
 
 from __future__ import annotations
@@ -18,18 +19,20 @@ import json
 import os
 import sys
 
-from ..config import openrouter_api_key, system1_jev_model, system2_model
+from ..config import SYSTEM2_AUTO_MODEL, openrouter_api_key, system1_jev_model, system2_model
 from .backends import predict
 from .bus import draft_text
+from .gate import auto_cost_tier
 
 USAGE = """\
 usage: python -m web.system1.live [--draft]
 
 Reads OPENROUTER_API_KEY from the environment (required).
 Pins SYSTEM1_BACKEND=openrouter_jev for this process.
-Optional: SYSTEM1_JEV_MODEL (default typesafe/jev-1.13),
-          SYSTEM2_MODEL (openrouter/free, openrouter/auto, or a :free id;
-          default openrouter/free; used only with --draft).
+Optional: SYSTEM1_JEV_MODEL (default typesafe/jev-1.13; chat ids are rejected),
+          SYSTEM2_MODEL (default openrouter/auto; or openrouter/free, or a :free id),
+          SYSTEM2_COST_TIER (low|medium|high|xhigh|max; default maps urgency, else low).
+--draft calls chat completions. Jev stays on the decisions API.
 """
 
 SMOKE_STATE = "Please refund the duplicate invoice payment."
@@ -70,11 +73,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"jev fallback: {result.get('fallback_reason')}", file=sys.stderr)
         return 1
 
+    tier = auto_cost_tier(result["answers"]) if system2_model() == SYSTEM2_AUTO_MODEL else None
     report = {
         "backend": result["backend"],
         "jev_model": system1_jev_model(),
         "served_model": result.get("model"),
         "system2_model": system2_model(),
+        "cost_tier": tier,
         "answers": result["answers"],
         "draft": None,
     }
@@ -86,10 +91,12 @@ def main(argv: list[str] | None = None) -> int:
             f"Answers: {json.dumps(result['answers'], default=str)}\n"
             "Write one sentence the Academy can show an operator."
         )
-        text, provider = draft_text(system, prompt)
+        text, provider, meta = draft_text(system, prompt, answers=result["answers"], state=SMOKE_STATE)
         report["draft"] = {
             "provider": provider,
-            "model": system2_model(),
+            "model": meta.get("requested_model") or system2_model(),
+            "served_model": meta.get("served_model"),
+            "cost_tier": meta.get("cost_tier"),
             "text": text,
         }
         print(json.dumps(report, indent=2))

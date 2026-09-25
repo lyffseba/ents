@@ -2,7 +2,13 @@
 
 from __future__ import annotations
 
-from ..config import system1_high_confidence, system1_needs_generation_threshold
+from ..config import (
+    system1_high_confidence,
+    system1_needs_generation_threshold,
+    system2_cost_tier_override,
+)
+
+_COST_TIERS = ("low", "medium", "high", "xhigh", "max")
 
 
 def answer_confidence(answer: dict) -> float:
@@ -49,6 +55,74 @@ def routing_confidence(answers: dict) -> float:
     if not signals:
         signals = [answer_confidence(a) for a in answers.values() if isinstance(a, dict)]
     return min(signals) if signals else 0.0
+
+
+def auto_cost_tier(answers: dict | None) -> str:
+    """Map System 1 urgency (else difficulty) onto an Auto Router ``cost_tier``.
+
+    No score → ``low`` (the band Auto uses when ``cost_tier`` is omitted).
+    ``SYSTEM2_COST_TIER`` wins when it is one of low|medium|high|xhigh|max.
+
+    The score is a weighted index. Divide by the highest probability index
+    (or by 2 when the score is above 1 and no support is present). Bands on
+    that 0–1 position: <0.20 low, <0.40 medium, <0.60 high, <0.80 xhigh,
+    otherwise max. Confidence below 0.5 steps down one band, not below low.
+    """
+    override = system2_cost_tier_override()
+    if override:
+        return override
+    answer = _urgency_answer(answers or {})
+    if answer is None:
+        return "low"
+    position = _normalized_score(answer)
+    if position < 0.20:
+        index = 0
+    elif position < 0.40:
+        index = 1
+    elif position < 0.60:
+        index = 2
+    elif position < 0.80:
+        index = 3
+    else:
+        index = 4
+    if answer_confidence(answer) < 0.5:
+        index = max(0, index - 1)
+    return _COST_TIERS[index]
+
+
+def _urgency_answer(answers: dict) -> dict | None:
+    for name in ("urgency", "difficulty"):
+        answer = answers.get(name)
+        if isinstance(answer, dict) and "score" in answer:
+            return answer
+    return None
+
+
+def _normalized_score(answer: dict) -> float:
+    try:
+        score = float(answer.get("score"))
+    except (TypeError, ValueError):
+        return 0.0
+    span = _score_span(answer, score)
+    if span <= 0:
+        return 0.0
+    return max(0.0, min(1.0, score / span))
+
+
+def _score_span(answer: dict, score: float) -> float:
+    probs = answer.get("probabilities")
+    if isinstance(probs, dict) and probs:
+        indexes = []
+        for key in probs:
+            try:
+                indexes.append(int(str(key)))
+            except ValueError:
+                continue
+        if indexes:
+            return float(max(indexes))
+    if isinstance(probs, list) and len(probs) >= 2:
+        return float(len(probs) - 1)
+    return 2.0 if score > 1 else 1.0
 
 
 def classify_route(answers: dict) -> tuple[str, str, float]:
