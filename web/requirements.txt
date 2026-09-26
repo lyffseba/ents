@@ -16,5 +16,9 @@ google-generativeai>=0.7
 # google-cloud-aiplatform>=1.50  # Best for "Google Cloud" + Vertex Gemini
 # Optional System 1 local backend (demo and CI use SYSTEM1_BACKEND=mock):
 #   pip install laya
-# The English checkpoint is downloaded on first Laya predict. If the package
-# or weights are missing, the bus falls back to the mock heuristic.
+# Public weights: https://huggingface.co/convaiinnovations/laya
+# The adapter is web/system1/laya.py (laya.Router.predict, not chat completions).
+# First English predict downloads ~800MB unless SYSTEM1_LAYA_PATH is a local
+# checkpoint directory. Missing package or weights fall back to the mock.
+# Offline check: python -m web.system1.laya_live --fixture
+# Live weights:  python -m web.system1.laya_live

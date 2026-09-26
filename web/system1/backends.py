@@ -1,9 +1,11 @@
 """System 1 backends: local Laya, Jev-on-OpenRouter, and a heuristic mock.
 
-The mock is the CI and demo path. Laya and Jev are used when selected and
-reachable; any load or HTTP failure falls back to the mock for that call
-(a missing Laya install or weight download is remembered for the process
-so later requests do not retry a multi-hundred-megabyte fetch).
+The mock is the CI and demo path. Laya (`web.system1.laya`, the published
+``Router.predict`` API) and Jev are used when selected and reachable. A
+missing Laya install or weight download is remembered for the process so
+later requests do not retry a multi-hundred-megabyte fetch. A predict error
+after the router has loaded falls back for that call only. Jev HTTP failures
+fall back per call.
 """
 
 from __future__ import annotations
@@ -17,9 +19,6 @@ from ..config import (
     openrouter_decisions_url,
     system1_backend_setting,
     system1_jev_model,
-    system1_laya_device,
-    system1_laya_model,
-    system1_laya_preload,
 )
 
 _WORD = re.compile(r"[a-z0-9]{4,}")
@@ -77,45 +76,57 @@ def laya_importable() -> bool:
 
 
 def laya_answers(state: Any, questions: dict) -> tuple[dict, str | None]:
-    """One Laya forward pass. Raises ``BackendUnavailable`` if weights are missing."""
+    """One Laya forward pass. Raises ``BackendUnavailable`` if weights are missing.
+
+    The router is built by ``web.system1.laya.open_router`` (published
+    ``laya.Router``). A failed import or checkpoint load is remembered for
+    the process. A later ``predict`` error is not: the loaded router stays.
+    """
     global _router, _laya_block_reason
     if _laya_block_reason:
         raise BackendUnavailable(_laya_block_reason)
-    try:
-        from laya import Router
-    except ImportError as exc:
-        _laya_block_reason = f"laya package not installed ({exc})"
-        raise BackendUnavailable(_laya_block_reason) from exc
+    from . import laya as laya_runtime
 
     try:
         if _router is None:
-            kwargs: dict = {"preload": system1_laya_preload()}
-            device = system1_laya_device()
-            if device:
-                kwargs["device"] = device
-            try:
-                _router = Router(**kwargs)
-            except TypeError:
-                _router = Router()
-        predict_kwargs: dict = {}
-        model_name = system1_laya_model()
-        if model_name:
-            predict_kwargs["model"] = model_name
-        result = _router.predict(state, questions, **predict_kwargs)
-    except BackendUnavailable:
-        raise
+            _router = laya_runtime.open_router()
+    except ImportError as exc:
+        _laya_block_reason = f"laya package not installed ({exc})"
+        raise BackendUnavailable(_laya_block_reason) from exc
+    except laya_runtime.LayaNotReady as exc:
+        if exc.sticky:
+            _laya_block_reason = str(exc)
+            _router = None
+        raise BackendUnavailable(str(exc)) from exc
     except Exception as exc:
         _laya_block_reason = f"laya weights unavailable ({type(exc).__name__}: {exc})"
         _router = None
         raise BackendUnavailable(_laya_block_reason) from exc
 
+    try:
+        result = laya_runtime.run_predict(_router, state, questions)
+    except laya_runtime.LayaNotReady as exc:
+        if exc.sticky:
+            _laya_block_reason = str(exc)
+        raise BackendUnavailable(str(exc)) from exc
+    except Exception as exc:
+        raise BackendUnavailable(f"laya predict failed ({type(exc).__name__}: {exc})") from exc
+
     if not isinstance(result, dict) or not isinstance(result.get("answers"), dict):
-        _laya_block_reason = "laya predict() did not return an answers object"
-        _router = None
-        raise BackendUnavailable(_laya_block_reason)
+        raise BackendUnavailable("laya predict() did not return an answers object")
+    return _normalize_answers(result["answers"], questions), _laya_served_model(result)
+
+
+def _laya_served_model(result: dict) -> str | None:
+    """Hub id when Laya reports one, otherwise the checkpoint name."""
     routing = result.get("routing") if isinstance(result.get("routing"), dict) else {}
-    model = routing.get("model") or routing.get("repo")
-    return _normalize_answers(result["answers"], questions), (str(model) if model else None)
+    repo = routing.get("repo")
+    name = routing.get("model")
+    if isinstance(repo, str) and repo.strip():
+        return repo.strip()
+    if isinstance(name, str) and name.strip():
+        return name.strip()
+    return None
 
 
 def jev_answers(state: Any, questions: dict) -> tuple[dict, str | None]:

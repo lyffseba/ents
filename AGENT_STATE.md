@@ -14,6 +14,7 @@ Read this first on a new machine. Update it when the stack or the curriculum con
 - **Phases that grade 4/4:** C00 Seed, C01 Enting, C02 Lexicon (JAX + MLX + MAX + Mojo)
 - **Not written:** C03 Self-Attention, C04 GPT-2. **C05** is an admitted stub.
 - **Surfaces:** `ents-cli/game.py` TUI, `web/` Academy (demo mode without Gemini), `ents-pi-mod/`
+- **System 1:** local Laya via `web/system1/laya.py` when `SYSTEM1_BACKEND=laya` or unset (`laya.Router.predict` on `convaiinnovations/laya`). Mock and Jev are unchanged. `python -m web.system1.laya_live --fixture` needs no weights.
 - **Git:** GitHub `main` is PR-protected. Hugging Face `hf` is a dataset remote.
 
 ## Grade

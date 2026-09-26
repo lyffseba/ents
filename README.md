@@ -125,9 +125,17 @@ Every decision is stored in `agent_decisions` (`agent_name=System1`) and listed 
 | `SYSTEM2_COST_TIER` | Optional Auto band: `low`, `medium`, `high`, `xhigh`, `max`. Unset maps System 1 urgency (else difficulty) and steps down one band when that score's confidence is below 0.5. No score sends `low`. Ignored unless the chat model is `openrouter/auto`. |
 | `SYSTEM1_HIGH_CONFIDENCE` | Deterministic cutoff. Default `0.85`. |
 | `SYSTEM1_NEEDS_GENERATION` | Noul cutoff for a question named `needs_generation`. Default `0.5`. |
-| `SYSTEM1_LAYA_MODEL` | Optional checkpoint: `english`, `multilingual`, or `typed-decisions`. |
-| `SYSTEM1_LAYA_DEVICE` | `cpu`, `cuda`, or `mps`. |
-| `SYSTEM1_LAYA_PRELOAD` | `1` to load Laya checkpoints at first use instead of lazily. |
+| `SYSTEM1_LAYA_MODEL` | Checkpoint: `english`, `multilingual`, or `typed-decisions` (aliases `en`, `multi`, `typed`). Unset lets the Router choose between English and multilingual. |
+| `SYSTEM1_LAYA_DEVICE` | `cpu`, `cuda`, or `mps`. Unset lets Laya pick. |
+| `SYSTEM1_LAYA_PRELOAD` | `1` to build the checkpoints this process will route to at first use. A named model or `SYSTEM1_LAYA_PATH` preloads only that checkpoint. Unset stays lazy. |
+| `SYSTEM1_LAYA_PATH` | Local checkpoint directory. Pins that directory to the named checkpoint (English if unnamed) and does not download it. |
+| `SYSTEM1_LAYA_REPO` | Hub repo. Default `convaiinnovations/laya` (English at the root, the other two in subfolders). |
+| `SYSTEM1_LAYA_REVISION` | Optional Hub commit, branch, or tag. |
+| `SYSTEM1_LAYA_MAX_LEN` | Optional `max_len` passed to `Router.predict` (for example `8192` on long multilingual text). |
+| `SYSTEM1_LAYA_MAX_LOADED` | How many checkpoints stay resident. Unset keeps Laya's default of 2. A local path defaults this to 1. |
+| `SYSTEM1_LAYA_AUTO_TASK` | `1` to let the Router select `typed-decisions` when the question ids match one of its four workflows. Off by default. |
+| `SYSTEM1_LAYA_TOKEN` | Optional Hugging Face token. Falls back to `HF_TOKEN`. The public Laya weights do not need one. |
+| `HF_TOKEN` | Optional. Used only when `SYSTEM1_LAYA_TOKEN` is empty. Not required for `convaiinnovations/laya`. |
 
 ### Try it
 
@@ -139,16 +147,35 @@ make -C web smoke
 
 That target sets `SYSTEM1_BACKEND=mock` and runs `scripts/test_system1.py` (mock backend, confidence gate, tutor and retention) before the HTTP smoke. "What is softmax?" on `/tutor` is a deterministic glossary hit. An empty or ambiguous ask escalates to the demo draft. `POST /ops/trigger-retention` gates the stalled-learner nudge and logs it on `/ops`.
 
-Local Laya (downloads the checkpoint on first predict, about 800MB for English):
+Local Laya, beside Jev. The public checkpoint is [convaiinnovations/laya](https://huggingface.co/convaiinnovations/laya). System 1 calls `laya.Router.predict` with the tutor and retention question schemas. It does not send those decisions through chat completions.
 
 ```bash
 pip install laya
-export SYSTEM1_BACKEND=laya
-# optional: export SYSTEM1_LAYA_DEVICE=cpu
+export SYSTEM1_BACKEND=laya   # also the default when SYSTEM1_BACKEND is unset
+# optional:
+# export SYSTEM1_LAYA_MODEL=english       # english | multilingual | typed-decisions
+# export SYSTEM1_LAYA_DEVICE=cpu          # cpu | cuda | mps
+# export SYSTEM1_LAYA_PATH=/path/to/checkpoint   # skip the Hub download
+# export SYSTEM1_LAYA_PRELOAD=1
+# export HF_TOKEN=hf_...                  # only if a download is gated; this model is public
 make -C web run
 ```
 
-If `import laya` fails or the weights cannot be loaded, that process falls back to the mock and records the reason on the decision.
+Offline check of that path (no download, recorded Router result through the tutor gate):
+
+```bash
+python -m web.system1.laya_live --fixture
+```
+
+Live weights (first English predict is about 800MB unless `SYSTEM1_LAYA_PATH` is set):
+
+```bash
+python -m web.system1.laya_live
+```
+
+Exit 0 when the decision backend is `laya`. Exit 1 when the process fell back to the mock; the reason is on stderr. `make -C web smoke` keeps `SYSTEM1_BACKEND=mock` and does not download weights.
+
+If `import laya` fails, `SYSTEM1_LAYA_PATH` is not a directory, or the checkpoint cannot be loaded, that process falls back to the mock and records the reason on the decision. A failed weight load is remembered for the process so later requests do not retry the download. A predict error after a successful load does not drop the router. If TensorFlow is installed, leave `USE_TF` unset; the adapter sets `USE_TF=0` before importing Laya so the TensorFlow probe cannot deadlock model construction. An explicit `USE_TF` is kept.
 
 Jev on OpenRouter, plus chat drafts for low-confidence cases.
 

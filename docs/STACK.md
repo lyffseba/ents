@@ -127,7 +127,7 @@ Floors only. `web/Dockerfile` does not install from that file's specifiers: the 
 | Vertex fallback | `from vertexai.generative_models import GenerativeModel` when `USE_VERTEX=true` | package not installed; platform docs now live under Gemini Enterprise Agent Platform | optional | [model versions](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/model-versions) |
 | OpenRouter chat | `POST https://openrouter.ai/api/v1/chat/completions`, default model `openrouter/free` | same endpoint; `openrouter/free` is the free router | match | [chat completions](https://openrouter.ai/docs/api/api-reference/chat/create-a-chat-completion) · [quickstart](https://openrouter.ai/docs/quickstart) · [free router](https://openrouter.ai/openrouter/free) |
 | OpenRouter Decisions (Jev) | `POST https://openrouter.ai/api/alpha/decisions`, default `typesafe/jev-1.13` | `typesafe/jev-1.13` is the current numbered release (listed 2026-09-18). `~typesafe/jev-latest` is the moving alias. The path is still under `/api/alpha/` | match | [Jev hub](https://openrouter.ai/docs/guides/community/jev) · [Decisions reference](https://openrouter.ai/docs/api/api-reference/alphadecisions/submit-a-decisions-request) · [System One](https://docs.typesafe.ai/concepts/system-one) |
-| Laya | optional `pip install laya` (comment in `requirements.txt`, not the image) | 0.3.20 | optional | [PyPI](https://pypi.org/project/laya/) · [weights](https://huggingface.co/convaiinnovations/laya) |
+| Laya | optional `pip install laya` (comment in `requirements.txt`, not the image). Adapter: `web/system1/laya.py` → `laya.Router` | 0.3.20 | optional | [PyPI](https://pypi.org/project/laya/) · [weights](https://huggingface.co/convaiinnovations/laya) |
 | Cloud Run | named deploy target (`CLOUD_RUN_SERVICE=ents-academy`). No service YAML in the repo | n/a | host | [Cloud Run docs](https://docs.cloud.google.com/run/docs) |
 
 `gemini-2.0-flash` retired on **2026-06-01**. The lifecycle table's recommended upgrade from that id is `gemini-3.1-flash-lite`. The newest generally available Flash model on the audit date is `gemini-3.8-flash`. Gemini 2.5 Pro, 2.5 Flash, and 2.5 Flash-Lite retire on 2026-10-20, so jumping only as far as 2.5 would be a short stay.
@@ -185,7 +185,7 @@ The bus:
 Backends, all in `web/system1/backends.py`:
 
 - **mock** — in-process heuristic. This is what `make -C web smoke` forces (`SYSTEM1_BACKEND=mock`).
-- **Laya** — `from laya import Router`, then `Router.predict`. Default when `SYSTEM1_BACKEND` is unset. Missing package or weights fall back to mock for the process. Not installed by `requirements.txt` or the Dockerfile.
+- **Laya** — `web/system1/laya.py` builds `laya.Router` (`convaiinnovations/laya`) and calls `Router.predict` with the bus schemas. Default when `SYSTEM1_BACKEND` is unset. `SYSTEM1_LAYA_PATH` pins a local checkpoint and skips that download. Missing package or weights fall back to mock for the process. Not installed by `requirements.txt` or the Dockerfile. `python -m web.system1.laya_live --fixture` exercises the path with no weights; without `--fixture` it loads the real checkpoint.
 - **Jev** — `httpx.post` to the Decisions API with `typesafe/jev-1.13`. No OpenRouter SDK.
 
 `call_gemini` uses `google.generativeai` (`genai.configure`, `GenerativeModel`) when `GEMINI_API_KEY` is set, or `vertexai.generative_models.GenerativeModel` when `USE_VERTEX=true`. With neither, it returns a `[demo-gemini]` string. The Vertex import is not backed by an installed package, so that branch fails and the function falls through to the API-key client.
@@ -215,7 +215,7 @@ Backends, all in `web/system1/backends.py`:
 5. **JAX 0.9.2 is capped below 0.10** while latest is 0.11.2. **huggingface_hub 1.27.0 is capped below 2** while latest is 2.0.0. Both caps are intentional until call sites are checked.
 6. **MLX 0.29.3 vs 0.32.2.** The constraint `>=0.22` allows the bump; the lock has not taken it. MLX remains Apple Silicon only.
 7. **Flax 0.12.8 vs 0.12.10**, and no exercise imports Flax. ONNX 1.22.0 vs 1.23.0, and the Oracle does not load ONNX. `download_gpt2.py` still fetches a GPT-2 ONNX file for a path MAX no longer consumes.
-8. **Laya 0.3.20 is optional and unpinned.** Demo and CI never install it. The image will not have it until the Dockerfile changes.
+8. **Laya 0.3.20 is optional and unpinned.** Demo and CI never install it. The image will not have it until the Dockerfile changes. The bus still selects it when `SYSTEM1_BACKEND` is unset and falls back to mock if `import laya` fails.
 9. **Jev `typesafe/jev-1.13` matches the current numbered model.** The Decisions endpoint is still alpha. `~typesafe/jev-latest` will move without a code change if you switch the default.
 10. **In sync:** requests 2.34.2, Textual 8.2.8, Rich 15.0.0, prompt_toolkit 3.0.53, Optax 0.2.8, Python 3.13.15 (latest 3.13 patch).
 
