@@ -31,10 +31,10 @@ from web.app import app  # noqa: E402
 from web import deps  # noqa: E402
 from web.agents import content as content_agent  # noqa: E402
 from web.config import system1_jev_model, system2_model  # noqa: E402
-from web.system1.backends import laya_importable, predict, reset_backend_state  # noqa: E402
+from web.system1.backends import laya_importable, predict, requested_backend, reset_backend_state  # noqa: E402
 from web.system1.flows import tutor_state  # noqa: E402
 from web.system1.gate import auto_cost_tier, classify_route  # noqa: E402
-from web.system1.bus import session_id_from_state  # noqa: E402
+from web.system1.bus import session_id_from_state, status as system1_status  # noqa: E402
 from web.system1.questions import normalize_questions  # noqa: E402
 from web.deps import SessionLocal  # noqa: E402
 from web.models import AgentDecision  # noqa: E402
@@ -90,6 +90,18 @@ class _EnvGuard(unittest.TestCase):
                 "SYSTEM2_COST_TIER",
                 "OPENROUTER_DECISIONS_URL",
                 "OPENROUTER_CHAT_URL",
+                "SYSTEM1_LAYA_MODEL",
+                "SYSTEM1_LAYA_DEVICE",
+                "SYSTEM1_LAYA_PRELOAD",
+                "SYSTEM1_LAYA_PATH",
+                "SYSTEM1_LAYA_REPO",
+                "SYSTEM1_LAYA_REVISION",
+                "SYSTEM1_LAYA_TOKEN",
+                "SYSTEM1_LAYA_MAX_LEN",
+                "SYSTEM1_LAYA_MAX_LOADED",
+                "SYSTEM1_LAYA_AUTO_TASK",
+                "HF_TOKEN",
+                "USE_TF",
             )
         }
         os.environ["SYSTEM1_BACKEND"] = "mock"
@@ -101,6 +113,21 @@ class _EnvGuard(unittest.TestCase):
         os.environ.pop("SYSTEM2_COST_TIER", None)
         os.environ.pop("OPENROUTER_DECISIONS_URL", None)
         os.environ.pop("OPENROUTER_CHAT_URL", None)
+        for key in (
+            "SYSTEM1_LAYA_MODEL",
+            "SYSTEM1_LAYA_DEVICE",
+            "SYSTEM1_LAYA_PRELOAD",
+            "SYSTEM1_LAYA_PATH",
+            "SYSTEM1_LAYA_REPO",
+            "SYSTEM1_LAYA_REVISION",
+            "SYSTEM1_LAYA_TOKEN",
+            "SYSTEM1_LAYA_MAX_LEN",
+            "SYSTEM1_LAYA_MAX_LOADED",
+            "SYSTEM1_LAYA_AUTO_TASK",
+            "HF_TOKEN",
+            "USE_TF",
+        ):
+            os.environ.pop(key, None)
 
     def tearDown(self):
         reset_backend_state()
@@ -840,6 +867,492 @@ class OpenRouterLiveSmokeTests(_EnvGuard):
             code = main(["--draft"])
         self.assertEqual(code, 1)
         self.assertEqual(calls, ["https://openrouter.ai/api/alpha/decisions"])
+
+
+def _laya_routing(repo="convaiinnovations/laya", model="english"):
+    return {"model": model, "repo": repo, "reason": "test"}
+
+
+class _ConfidenceScalar:
+    """Stand-in for a numpy scalar. Laya returns those on the confidence field."""
+
+    def __init__(self, value):
+        self._value = value
+
+    def item(self):
+        return self._value
+
+
+class LayaBackendTests(_EnvGuard):
+    def _fake_package(self, router_cls):
+        import sys
+        import types
+
+        module = types.ModuleType("laya")
+        module.Router = router_cls
+        previous = sys.modules.get("laya")
+        sys.modules["laya"] = module
+        self.addCleanup(lambda: self._restore_module(previous))
+
+    @staticmethod
+    def _restore_module(previous):
+        import sys
+
+        if previous is None:
+            sys.modules.pop("laya", None)
+        else:
+            sys.modules["laya"] = previous
+
+    def test_unset_backend_requests_laya_without_opening_a_router(self):
+        os.environ.pop("SYSTEM1_BACKEND", None)
+        with patch("web.system1.laya.open_router", side_effect=AssertionError("weights")) as mocked:
+            report = system1_status()
+            self.assertEqual(requested_backend(), "laya")
+        self.assertEqual(mocked.call_count, 0)
+        self.assertEqual(report["setting"], "auto")
+        self.assertEqual(report["requested_backend"], "laya")
+        self.assertEqual(report["laya_repo"], "convaiinnovations/laya")
+        self.assertEqual(report["laya_model"], "auto")
+        self.assertEqual(report["laya_device"], "auto")
+        self.assertIsNone(report["laya_path"])
+        self.assertIn("laya_importable", report)
+
+    def test_unknown_backend_name_stays_on_mock(self):
+        os.environ["SYSTEM1_BACKEND"] = "chat"
+        result = predict("What is softmax?", {
+            "intent": {
+                "type": "choice",
+                "instructions": "What kind of help?",
+                "criteria": {"define": "softmax", "open": "generated"},
+            },
+        })
+        self.assertEqual(result["requested_backend"], "mock")
+        self.assertEqual(result["backend"], "mock")
+        self.assertIsNone(result["fallback_reason"])
+
+    def test_missing_package_is_cached(self):
+        os.environ["SYSTEM1_BACKEND"] = "laya"
+        calls = {"n": 0}
+
+        def boom():
+            calls["n"] += 1
+            raise ImportError("No module named laya")
+
+        with patch("web.system1.laya.open_router", side_effect=boom):
+            first = predict("What is softmax?", {"intent": _BILLING["department"]})
+            second = predict("What is softmax?", {"intent": _BILLING["department"]})
+        self.assertEqual(calls["n"], 1)
+        self.assertEqual(first["backend"], "mock")
+        self.assertEqual(second["backend"], "mock")
+        self.assertIn("not installed", first["fallback_reason"])
+        self.assertEqual(second["fallback_reason"], first["fallback_reason"])
+
+    def test_local_checkpoint_is_passed_to_the_published_router(self):
+        os.environ["SYSTEM1_BACKEND"] = "laya"
+        os.environ["USE_TF"] = "1"
+        os.environ["SYSTEM1_LAYA_PATH"] = self._weights()
+        os.environ["SYSTEM1_LAYA_MODEL"] = "multi"
+        os.environ["SYSTEM1_LAYA_DEVICE"] = "cpu"
+        os.environ["SYSTEM1_LAYA_TOKEN"] = "hf-explicit"
+        os.environ["HF_TOKEN"] = "hf-env"
+        os.environ["SYSTEM1_LAYA_REVISION"] = "abc123"
+        os.environ["SYSTEM1_LAYA_MAX_LEN"] = "8192"
+        os.environ["SYSTEM1_LAYA_PRELOAD"] = "1"
+        captured = {}
+
+        class Router:
+            def __init__(self, **kwargs):
+                captured["init"] = kwargs
+
+            def preload(self, names):
+                captured["preload"] = list(names)
+
+            def predict(self, state, questions, **kwargs):
+                captured["predict"] = kwargs
+                captured["state"] = state
+                captured["questions"] = questions
+                return {
+                    "answers": {
+                        "department": {
+                            "choice": "billing",
+                            "confidence": _ConfidenceScalar(0.95),
+                            "probabilities": {"billing": 0.97, "technical": 0.03},
+                        },
+                    },
+                    "routing": _laya_routing("convaiinnovations/laya/multilingual", "multilingual"),
+                }
+
+        self._fake_package(Router)
+        with patch("httpx.post", side_effect=AssertionError("laya must not call chat or jev")):
+            result = predict("Please refund the duplicate invoice payment", {
+                "department": _BILLING["department"],
+            })
+        self.assertEqual(os.environ["USE_TF"], "1")
+        self.assertFalse(captured["init"].get("preload", False))
+        self.assertEqual(captured["init"]["device"], "cpu")
+        self.assertEqual(captured["init"]["token"], "hf-explicit")
+        self.assertEqual(captured["init"]["revision"], "abc123")
+        self.assertEqual(captured["init"]["max_loaded"], 1)
+        self.assertEqual(captured["init"]["models"], {"multilingual": self._weights()})
+        self.assertNotIn("auto_task_detection", captured["init"])
+        self.assertEqual(captured["preload"], ["multilingual"])
+        self.assertEqual(captured["predict"], {"model": "multilingual", "max_len": 8192})
+        self.assertEqual(captured["questions"]["department"]["type"], "choice")
+        self.assertEqual(result["backend"], "laya")
+        self.assertEqual(result["requested_backend"], "laya")
+        self.assertIsNone(result["fallback_reason"])
+        self.assertEqual(result["model"], "convaiinnovations/laya/multilingual")
+        self.assertEqual(result["answers"]["department"]["choice"], "billing")
+        self.assertEqual(result["answers"]["department"]["confidence"], 0.95)
+
+    def test_local_path_without_a_model_pins_english(self):
+        os.environ["SYSTEM1_BACKEND"] = "laya"
+        path = self._weights()
+        os.environ["SYSTEM1_LAYA_PATH"] = path
+        captured = {}
+
+        class Router:
+            def __init__(self, **kwargs):
+                captured["init"] = kwargs
+
+            def predict(self, state, questions, **kwargs):
+                captured["predict"] = kwargs
+                return {
+                    "answers": {"department": {"choice": "technical", "confidence": 0.9, "probabilities": {"technical": 0.9, "billing": 0.1}}},
+                    "routing": _laya_routing(),
+                }
+
+        self._fake_package(Router)
+        result = predict("The app crashes", {"department": _BILLING["department"]})
+        self.assertEqual(captured["init"]["models"], {"english": path})
+        self.assertEqual(captured["init"]["max_loaded"], 1)
+        self.assertEqual(captured["predict"]["model"], "english")
+        self.assertEqual(result["backend"], "laya")
+        self.assertEqual(result["answers"]["department"]["choice"], "technical")
+
+    def test_custom_repo_and_typed_alias(self):
+        os.environ["SYSTEM1_BACKEND"] = "laya"
+        os.environ["SYSTEM1_LAYA_REPO"] = "convaiinnovations/laya-typed-decisions"
+        os.environ["SYSTEM1_LAYA_MODEL"] = "typed"
+        os.environ["SYSTEM1_LAYA_AUTO_TASK"] = "1"
+        captured = {}
+
+        class Router:
+            def __init__(self, **kwargs):
+                captured["init"] = kwargs
+
+            def predict(self, state, questions, **kwargs):
+                captured["predict"] = kwargs
+                return {
+                    "answers": {"department": {"choice": "billing", "confidence": 0.88, "probabilities": {"billing": 0.9, "technical": 0.1}}},
+                    "routing": _laya_routing("convaiinnovations/laya-typed-decisions", "typed-decisions"),
+                }
+
+        self._fake_package(Router)
+        result = predict("refund", {"department": _BILLING["department"]})
+        self.assertEqual(captured["init"]["models"], {"typed-decisions": "convaiinnovations/laya-typed-decisions"})
+        self.assertTrue(captured["init"]["auto_task_detection"])
+        self.assertEqual(captured["predict"]["model"], "typed-decisions")
+        self.assertEqual(result["model"], "convaiinnovations/laya-typed-decisions")
+
+    def test_preload_covers_the_automatic_pair_and_typed_when_asked(self):
+        os.environ["SYSTEM1_BACKEND"] = "laya"
+        os.environ["SYSTEM1_LAYA_PRELOAD"] = "1"
+        os.environ["SYSTEM1_LAYA_AUTO_TASK"] = "yes"
+        captured = {}
+
+        class Router:
+            def __init__(self, **kwargs):
+                captured["init"] = kwargs
+
+            def preload(self, names):
+                captured["preload"] = list(names)
+
+            def predict(self, state, questions, **kwargs):
+                captured["predict"] = kwargs
+                return {
+                    "answers": {"department": {"choice": "billing", "confidence": 0.9, "probabilities": {"billing": 1.0, "technical": 0.0}}},
+                    "routing": _laya_routing(),
+                }
+
+        self._fake_package(Router)
+        result = predict("refund", {"department": _BILLING["department"]})
+        self.assertNotIn("models", captured["init"])
+        self.assertNotIn("model", captured["predict"])
+        self.assertEqual(captured["preload"], ["english", "multilingual", "typed-decisions"])
+        self.assertEqual(result["backend"], "laya")
+        self.assertEqual(result["model"], "convaiinnovations/laya")
+
+    def test_unset_use_tf_is_disabled_before_import(self):
+        os.environ["SYSTEM1_BACKEND"] = "laya"
+        self.assertIsNone(os.environ.get("USE_TF"))
+
+        class Router:
+            def __init__(self, **kwargs):
+                pass
+
+            def predict(self, state, questions, **kwargs):
+                return {
+                    "answers": {"department": {"choice": "billing", "confidence": 0.9, "probabilities": {"billing": 1, "technical": 0}}},
+                    "routing": _laya_routing(),
+                }
+
+        self._fake_package(Router)
+        predict("refund", {"department": _BILLING["department"]})
+        self.assertEqual(os.environ["USE_TF"], "0")
+
+    def test_bad_model_and_missing_path_do_not_construct_a_router(self):
+        os.environ["SYSTEM1_BACKEND"] = "laya"
+        os.environ["SYSTEM1_LAYA_MODEL"] = "openrouter/auto"
+
+        class Router:
+            def __init__(self, **kwargs):
+                raise AssertionError("bad model must not construct Router")
+
+        self._fake_package(Router)
+        bad = predict("refund", {"department": _BILLING["department"]})
+        self.assertEqual(bad["backend"], "mock")
+        self.assertIn("typed-decisions", bad["fallback_reason"])
+        self.assertIn("openrouter/auto", bad["fallback_reason"])
+
+        reset_backend_state()
+        os.environ.pop("SYSTEM1_LAYA_MODEL", None)
+        os.environ["SYSTEM1_LAYA_PATH"] = "/no/such/laya-checkpoint"
+        missing = predict("refund", {"department": _BILLING["department"]})
+        self.assertEqual(missing["backend"], "mock")
+        self.assertIn("SYSTEM1_LAYA_PATH", missing["fallback_reason"])
+        again = predict("refund", {"department": _BILLING["department"]})
+        self.assertEqual(again["fallback_reason"], missing["fallback_reason"])
+
+    def test_load_failure_sticks_and_a_later_predict_error_does_not(self):
+        os.environ["SYSTEM1_BACKEND"] = "laya"
+        constructed = {"n": 0}
+
+        class Router:
+            def __init__(self, **kwargs):
+                constructed["n"] += 1
+                if constructed["n"] == 1:
+                    raise OSError("checkpoint download failed")
+                self._calls = 0
+
+            def predict(self, state, questions, **kwargs):
+                self._calls += 1
+                if self._calls == 1:
+                    raise RuntimeError("transient")
+                return {
+                    "answers": {"department": {"choice": "billing", "confidence": 0.93, "probabilities": {"billing": 0.93, "technical": 0.07}}},
+                    "routing": _laya_routing(),
+                }
+
+        self._fake_package(Router)
+        first = predict("refund", {"department": _BILLING["department"]})
+        second = predict("refund", {"department": _BILLING["department"]})
+        self.assertEqual(constructed["n"], 1)
+        self.assertEqual(first["backend"], "mock")
+        self.assertIn("weights unavailable", first["fallback_reason"])
+        self.assertEqual(second["backend"], "mock")
+
+        reset_backend_state()
+        constructed["n"] = 1  # next init succeeds
+        third = predict("refund", {"department": _BILLING["department"]})
+        fourth = predict("refund", {"department": _BILLING["department"]})
+        self.assertEqual(third["backend"], "mock")
+        self.assertIn("laya predict failed", third["fallback_reason"])
+        self.assertEqual(fourth["backend"], "laya")
+        self.assertEqual(fourth["answers"]["department"]["choice"], "billing")
+        self.assertIsNone(fourth["fallback_reason"])
+
+    def test_malformed_payload_falls_back_without_forgetting_the_router(self):
+        os.environ["SYSTEM1_BACKEND"] = "laya"
+        calls = {"n": 0}
+
+        class Router:
+            def __init__(self, **kwargs):
+                calls["init"] = calls.get("init", 0) + 1
+
+            def predict(self, state, questions, **kwargs):
+                calls["n"] += 1
+                if calls["n"] == 1:
+                    return {"routing": _laya_routing()}
+                return {
+                    "answers": {"department": {"choice": "billing", "confidence": 0.91, "probabilities": {"billing": 0.91, "technical": 0.09}}},
+                    "routing": _laya_routing(),
+                }
+
+        self._fake_package(Router)
+        bad = predict("refund", {"department": _BILLING["department"]})
+        good = predict("refund", {"department": _BILLING["department"]})
+        self.assertEqual(calls["init"], 1)
+        self.assertEqual(bad["backend"], "mock")
+        self.assertIn("answers", bad["fallback_reason"])
+        self.assertEqual(good["backend"], "laya")
+
+    def _tutor_router(self, answers):
+        class Router:
+            def predict(self, state, questions, **kwargs):
+                return {"answers": answers, "routing": _laya_routing()}
+
+        return patch("web.system1.laya.open_router", return_value=Router())
+
+    def test_laya_choice_drives_tutor_not_the_mock(self):
+        os.environ["SYSTEM1_BACKEND"] = "laya"
+        before = _GEMINI_CALLS["n"]
+        answers = {
+            "intent": {
+                "choice": "lore",
+                "confidence": 0.97,
+                "probabilities": {"lore": 0.97, "define": 0.01, "hint": 0.01, "open": 0.01},
+            },
+            "difficulty": {"score": 0.2, "confidence": 0.9, "probabilities": [0.8, 0.2, 0.0]},
+            "needs_generation": {"noul": 0.04, "confidence": 0.92},
+        }
+        with self._tutor_router(answers), patch("httpx.post", side_effect=AssertionError("no network")):
+            response = _CLIENT.post("/tutor/ask", data={"question": "What is softmax?"})
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["system1"]["backend"], "laya")
+        self.assertEqual(body["system1"]["requested_backend"], "laya")
+        self.assertEqual(body["system1"]["model"], "convaiinnovations/laya")
+        self.assertIsNone(body["system1"]["fallback_reason"])
+        self.assertEqual(body["system1"]["route"], "deterministic")
+        self.assertEqual(body["system1"]["answers"]["intent"]["choice"], "lore")
+        self.assertIn("Fangorn is patient", body["answer"])
+        self.assertNotIn("exp(x_i)", body["answer"])
+        self.assertEqual(_GEMINI_CALLS["n"], before)
+
+    def test_laya_choice_drives_retention_not_the_mock(self):
+        os.environ["SYSTEM1_BACKEND"] = "laya"
+        answers = {
+            "intervention": {
+                "choice": "wait",
+                "confidence": 0.96,
+                "probabilities": {"wait": 0.96, "nudge": 0.02, "discount": 0.01, "tutor_handoff": 0.01},
+            },
+            "urgency": {"score": 0.1, "confidence": 0.9, "probabilities": [0.9, 0.1, 0.0]},
+            "churn_risk": {"noul": 0.05, "confidence": 0.9},
+            "needs_generation": {"noul": 0.04},
+        }
+        state = {
+            "id": 42,
+            "email": "slow@ent.dev",
+            "phase": "01",
+            "days": 7,
+            "stuck_on": "softmax edge cases",
+            "text": "User 42 has been at phase 01 for 7 days, stuck on: softmax edge cases.",
+        }
+        with self._tutor_router(answers), patch("httpx.post", side_effect=AssertionError("no network")):
+            outcome = decide_flow("retention", state)
+        self.assertEqual(outcome["backend"], "laya")
+        self.assertEqual(outcome["route"], "deterministic")
+        self.assertEqual(outcome["answers"]["intervention"]["choice"], "wait")
+        self.assertIn("No outreach", outcome["text"])
+        self.assertAlmostEqual(outcome["answers"]["needs_generation"]["noul"], 0.04)
+        self.assertGreaterEqual(outcome["answers"]["needs_generation"]["confidence"], 0.9)
+
+        from web.agents.retention import run_retention_agent
+
+        with self._tutor_router(answers):
+            run_retention_agent(dry_run=True)
+        db = SessionLocal()
+        try:
+            row = (
+                db.query(AgentDecision)
+                .filter(AgentDecision.agent_name == "RetentionAgent")
+                .order_by(AgentDecision.id.desc())
+                .first()
+            )
+        finally:
+            db.close()
+        self.assertIn("backend=laya", row.decision)
+        self.assertIn("action=wait", row.decision)
+        self.assertIn("No outreach", row.gemini_output)
+
+    def test_low_confidence_laya_escalates_to_chat_not_decisions(self):
+        os.environ["SYSTEM1_BACKEND"] = "laya"
+        os.environ["OPENROUTER_API_KEY"] = "sk-or-test"
+        answers = {
+            "intent": {
+                "choice": "open",
+                "confidence": 0.4,
+                "probabilities": {"open": 0.4, "define": 0.2, "hint": 0.2, "lore": 0.2},
+            },
+            "difficulty": {"score": 1.6, "confidence": 0.9, "probabilities": [0.0, 0.4, 0.6]},
+            "needs_generation": {"noul": 0.91, "confidence": 0.8},
+        }
+        captured = []
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            captured.append({"url": url, "json": json})
+            return _FakeResponse(_chat_payload("A generated hint."))
+
+        with self._tutor_router(answers), patch("httpx.post", side_effect=fake_post):
+            outcome = decide_flow("tutor", tutor_state("Explain attention from scratch"))
+        self.assertEqual(outcome["backend"], "laya")
+        self.assertEqual(outcome["model"], "convaiinnovations/laya")
+        self.assertEqual(outcome["route"], "generative")
+        self.assertEqual(outcome["generative_provider"], "openrouter")
+        self.assertEqual(outcome["text"], "A generated hint.")
+        self.assertEqual(len(captured), 1)
+        self.assertIn("/chat/completions", captured[0]["url"])
+        self.assertNotIn("decisions", captured[0]["url"])
+        self.assertEqual(captured[0]["json"]["model"], "openrouter/auto")
+        self.assertEqual(captured[0]["json"]["plugins"][0]["id"], "auto-router")
+        self.assertNotEqual(captured[0]["json"]["model"], "typesafe/jev-1.13")
+
+    def _weights(self):
+        if not hasattr(self, "_weight_dir"):
+            self._weight_dir = tempfile.TemporaryDirectory()
+            self.addCleanup(self._weight_dir.cleanup)
+        return self._weight_dir.name
+
+
+class LayaLiveSmokeTests(_EnvGuard):
+    def _main(self):
+        from web.system1.laya_live import main
+        return main
+
+    def test_readme_documents_the_local_laya_command(self):
+        readme = (ROOT / "README.md").read_text()
+        self.assertIn("python -m web.system1.laya_live --fixture", readme)
+        self.assertIn("python -m web.system1.laya_live", readme)
+        self.assertIn("SYSTEM1_LAYA_PATH", readme)
+        self.assertIn("SYSTEM1_LAYA_MODEL", readme)
+        self.assertIn("convaiinnovations/laya", readme)
+        self.assertIn("HF_TOKEN", readme)
+        env = (ROOT / ".env.example").read_text()
+        self.assertIn("SYSTEM1_LAYA_PATH", env)
+        self.assertIn("HF_TOKEN", env)
+
+    def test_fixture_prints_a_laya_decision_without_the_network(self):
+        main = self._main()
+        from io import StringIO
+        stdout = StringIO()
+        before = _GEMINI_CALLS["n"]
+        with patch("httpx.post", side_effect=AssertionError("no network")), patch("sys.stdout", stdout):
+            code = main(["--fixture"])
+        self.assertEqual(code, 0)
+        self.assertEqual(_GEMINI_CALLS["n"], before)
+        raw = stdout.getvalue()
+        report = json.loads(raw[raw.rfind("\n{"):])
+        self.assertEqual(report["backend"], "laya")
+        self.assertEqual(report["requested_backend"], "laya")
+        self.assertEqual(report["model"], "convaiinnovations/laya")
+        self.assertEqual(report["route"], "deterministic")
+        self.assertEqual(report["answers"]["intent"]["choice"], "define")
+        self.assertIn("softmax", report["text"].lower())
+        self.assertIsNone(report["fallback_reason"])
+
+    def test_missing_weights_exit_without_calling_chat(self):
+        os.environ["SYSTEM1_LAYA_PATH"] = "/no/such/laya-checkpoint"
+        main = self._main()
+        with patch("httpx.post", side_effect=AssertionError("no network")):
+            code = main([])
+        self.assertEqual(code, 1)
+
+    def test_help_and_unknown_args(self):
+        main = self._main()
+        self.assertEqual(main(["--help"]), 0)
+        self.assertEqual(main(["--draft"]), 2)
 
 
 if __name__ == "__main__":

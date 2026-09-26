@@ -157,14 +157,77 @@ def openrouter_chat_url() -> str:
     ).strip()
 
 
+# Public bundle. English weights live at the repo root; multilingual and
+# typed-decisions are subfolders. Laya is not gated; HF_TOKEN is optional.
+LAYA_BUNDLE_REPO = "convaiinnovations/laya"
+
+
 def system1_laya_model() -> str:
-    """Optional Laya checkpoint name (``english``, ``multilingual``, ``typed-decisions``)."""
+    """Checkpoint name. Empty lets ``Router`` choose english vs multilingual.
+
+    Accepted at predict time: ``english``, ``multilingual``, ``typed-decisions``,
+    and the aliases Laya documents (``en``, ``multi``, ``typed``, …).
+    """
     return os.getenv("SYSTEM1_LAYA_MODEL", "").strip()
 
 
 def system1_laya_device() -> str:
+    """``cpu``, ``cuda``, or ``mps``. Empty lets Laya pick."""
     return os.getenv("SYSTEM1_LAYA_DEVICE", "").strip()
 
 
 def system1_laya_preload() -> bool:
     return os.getenv("SYSTEM1_LAYA_PRELOAD", "").lower() in {"1", "true", "yes"}
+
+
+def system1_laya_path() -> str:
+    """Local checkpoint directory. When set, that checkpoint is not downloaded."""
+    return os.getenv("SYSTEM1_LAYA_PATH", "").strip()
+
+
+def system1_laya_repo() -> str:
+    """Hub repo or standalone checkpoint repo. Default is the public bundle."""
+    return os.getenv("SYSTEM1_LAYA_REPO", "").strip() or LAYA_BUNDLE_REPO
+
+
+def system1_laya_revision() -> str:
+    """Optional Hub revision (commit, branch, or tag) applied to every load."""
+    return os.getenv("SYSTEM1_LAYA_REVISION", "").strip()
+
+
+def system1_laya_token() -> str:
+    """Optional Hugging Face token. ``SYSTEM1_LAYA_TOKEN`` wins over ``HF_TOKEN``."""
+    return os.getenv("SYSTEM1_LAYA_TOKEN", "").strip() or os.getenv("HF_TOKEN", "").strip()
+
+
+def system1_laya_max_len() -> int | None:
+    """Optional ``Router.predict(max_len=...)``. Unset or invalid means Laya's default."""
+    raw = os.getenv("SYSTEM1_LAYA_MAX_LEN", "").strip()
+    if not raw:
+        return None
+    try:
+        value = int(raw)
+    except ValueError:
+        return None
+    if value < 1:
+        return None
+    return value
+
+
+def system1_laya_max_loaded() -> int | None:
+    """How many checkpoints stay resident. Unset keeps Laya's default (2)."""
+    raw = os.getenv("SYSTEM1_LAYA_MAX_LOADED", "").strip()
+    if not raw:
+        return None
+    try:
+        value = int(raw)
+    except ValueError:
+        return None
+    if value < 1:
+        return None
+    return value
+
+
+def system1_laya_auto_task() -> bool:
+    """Opt in to automatic ``typed-decisions`` routing. Off unless set."""
+    return os.getenv("SYSTEM1_LAYA_AUTO_TASK", "").strip().lower() in {"1", "true", "yes"}

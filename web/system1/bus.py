@@ -12,6 +12,10 @@ from ..config import (
     openrouter_chat_url,
     system1_high_confidence,
     system1_jev_model,
+    system1_laya_device,
+    system1_laya_model,
+    system1_laya_path,
+    system1_laya_repo,
     system2_model,
 )
 from .backends import laya_importable, predict, requested_backend
@@ -27,6 +31,10 @@ def status() -> dict:
         "setting": setting or "auto",
         "requested_backend": requested_backend(),
         "laya_importable": laya_importable(),
+        "laya_model": system1_laya_model() or "auto",
+        "laya_repo": system1_laya_repo(),
+        "laya_device": system1_laya_device() or "auto",
+        "laya_path": system1_laya_path() or None,
         "openrouter_configured": bool(openrouter_api_key()),
         "high_confidence": system1_high_confidence(),
         "jev_model": system1_jev_model(),
