@@ -1,8 +1,8 @@
 # Ents stack
 
-Audited **2026-09-25** against `main` at `79f13fc`. This file is the ledger for what that tree actually runs: `max_env/`, `web/`, `ents-cli/`, `ents-pi-mod/`, and `scripts/`.
+Audited **2026-10-12** against `main` at `cd5f017`. This file is the ledger for what that tree actually runs: `max_env/`, `web/`, `ents-cli/`, `ents-pi-mod/`, and `scripts/`.
 
-**Latest stable** means the newest release the upstream project publishes for production use. Nightlies and pre-releases are not the target. On this date that excludes MAX `26.7.0.dev…` and CPython 3.15 (planned 2026-10-01). Doc links below are the current stable manuals, not a frozen snapshot of the version we pin.
+**Latest stable** means the newest release the upstream project publishes for production use. Nightlies and pre-releases are not the target. On this date that excludes MAX `26.7.0.dev…`. CPython 3.15.0 (2026-10-09) is a stable feature release and the overall latest. This tree pins 3.13. Doc links below are the current stable manuals, not a frozen snapshot of the version we pin.
 
 Resolved curriculum versions come from `max_env/pixi.lock`. The Academy has no lockfile.
 
@@ -74,23 +74,23 @@ Channels: `https://conda.modular.com/max`, `conda-forge`, plus PyPI for MLX. Pla
 | Piece | Declared | Resolved | Latest stable | Drift | Official docs |
 | --- | --- | --- | --- | --- | --- |
 | Pixi | host installer `https://pixi.sh/install.sh` (unpinned) | not recorded | 0.81.0 (2026-09-15) | host | [pixi.prefix.dev/latest](https://pixi.prefix.dev/latest/) |
-| Python | `3.13.*` | 3.13.15 | 3.13.15 on this line; 3.14.7 overall | line-current | [docs.python.org/3](https://docs.python.org/3/) · [3.13](https://docs.python.org/3.13/) |
+| Python | `3.13.*` | 3.13.15 | 3.13.16 on this line; 3.15.0 overall | behind | [docs.python.org/3](https://docs.python.org/3/) · [3.13](https://docs.python.org/3.13/) |
 | Mojo | `==1.0.0` | 1.0.0 | 1.1.0 (with MAX 26.6, 2026-09-17) | behind | [mojolang.org/docs](https://mojolang.org/docs/) |
 | MAX | `==26.5.0` | 26.5.0 (`max` + `max-core`) | 26.6.0 | behind | [max.modular.com](https://max.modular.com/) · [releases](https://max.modular.com/releases/) |
 | JAX | `>=0.9.2,<0.10` | 0.9.2 | 0.11.2 | capped | [docs.jax.dev](https://docs.jax.dev/en/latest/) |
 | JAXlib | `>=0.9.2,<0.10` | 0.9.2 (cpu, cp313) | 0.11.2 | capped | same as JAX |
-| MLX | PyPI `>=0.22` | 0.29.3 (cp313, macOS arm64 wheel) | 0.32.2 | behind | [MLX docs](https://ml-explore.github.io/mlx/build/html/index.html) |
+| MLX | PyPI `>=0.22` | 0.29.3 (cp313, macOS arm64 wheel) | 0.32.3 | behind | [MLX docs](https://ml-explore.github.io/mlx/build/html/index.html) |
 | Flax | `>=0.12.6,<0.13` | 0.12.8 | 0.12.10 | behind | [flax.readthedocs.io](https://flax.readthedocs.io/en/latest/) |
-| NumPy | transitive (JAX / MAX) | 2.5.2 | 2.5.3 | behind | [numpy.org/doc/stable](https://numpy.org/doc/stable/) |
-| ONNX | `>=1.21.0,<2` | 1.22.0 | 1.23.0 | behind | [onnx.ai/onnx](https://onnx.ai/onnx/) |
-| huggingface_hub | `>=1.11.0,<2` | 1.27.0 | 2.0.0 | capped | [Hub docs](https://huggingface.co/docs/huggingface_hub/index) |
+| NumPy | transitive (JAX / MAX) | 2.5.2 | 2.5.4 | behind | [numpy.org/doc/stable](https://numpy.org/doc/stable/) |
+| ONNX | `>=1.21.0,<2` | 1.22.0 | 1.23.2 | behind | [onnx.ai/onnx](https://onnx.ai/onnx/) |
+| huggingface_hub | `>=1.11.0,<2` | 1.27.0 | 2.2.0 | capped | [Hub docs](https://huggingface.co/docs/huggingface_hub/index) |
 | requests | `>=2.33.1,<3` | 2.34.2 | 2.34.2 | match | [requests docs](https://requests.readthedocs.io/en/latest/) |
 | Textual | `>=8.2.4,<9` | 8.2.8 | 8.2.8 | match | [textual.textualize.io](https://textual.textualize.io/) |
 | Rich | `>=15.0.0,<16` | 15.0.0 | 15.0.0 | match | [Rich docs](https://rich.readthedocs.io/en/stable/) |
 | prompt_toolkit | `>=3.0.52,<4` | 3.0.53 | 3.0.53 | match | [prompt_toolkit docs](https://python-prompt-toolkit.readthedocs.io/en/stable/) |
 | Optax | not declared; Flax pulls it | 0.2.8 | 0.2.8 | match | [optax docs](https://optax.readthedocs.io/en/latest/) |
 
-The MAX 26.5 conda package in the lock is the `3.13` build (`max-26.5.0-3.13release`). Staying on Python 3.13 is what that artifact expects. CPython 3.14.7 is the current overall stable, and MAX 26.6's PyPI metadata accepts 3.10–3.14, so a later bump can move the interpreter. Do not treat 3.14 as required for the pin we ship today.
+The MAX 26.5 conda package in the lock is the `3.13` build (`max-26.5.0-3.13release`). Staying on Python 3.13 is what that artifact expects. The latest 3.13 patch is 3.13.16 (2026-09-30); the lock still resolves 3.13.15. CPython 3.15.0 (2026-10-09) is the current overall stable, and the 3.14 bugfix line is 3.14.8 (2026-09-30). MAX 26.6's PyPI metadata is `>=3.10,<3.15`, so it accepts 3.10–3.14. A later bump can move the interpreter inside that range. The pin we ship today stays on 3.13.
 
 ### Academy (`web/requirements.txt`)
 
@@ -98,22 +98,22 @@ Floors only. `web/Dockerfile` does not install from that file's specifiers: the 
 
 | Piece | Declared floor | Resolved in-repo | Latest stable | Drift | Official docs |
 | --- | --- | --- | --- | --- | --- |
-| Python (image) | `FROM python:3.12-slim` (floating tag) | not digest-pinned | 3.12.14 on this line (security-only); 3.14.7 overall | unpinned | [Docker](https://docs.docker.com/) · [python image](https://hub.docker.com/_/python) · [docs.python.org/3](https://docs.python.org/3/) |
-| Python (local `make`) | host `python3` | not pinned | 3.14.7 | host | [docs.python.org/3](https://docs.python.org/3/) |
-| FastAPI | `>=0.115` | unpinned | 0.141.1 | unpinned | [fastapi.tiangolo.com](https://fastapi.tiangolo.com/) |
+| Python (image) | `FROM python:3.12-slim` (floating tag) | not digest-pinned | 3.12.15 on this line (security-only); 3.15.0 overall | unpinned | [Docker](https://docs.docker.com/) · [python image](https://hub.docker.com/_/python) · [docs.python.org/3](https://docs.python.org/3/) |
+| Python (local `make`) | host `python3` | not pinned | 3.15.0 | host | [docs.python.org/3](https://docs.python.org/3/) |
+| FastAPI | `>=0.115` | unpinned | 0.143.0 | unpinned | [fastapi.tiangolo.com](https://fastapi.tiangolo.com/) |
 | Uvicorn | `>=0.30` (`[standard]` in the image) | unpinned | 0.54.0 | unpinned | [uvicorn.dev](https://uvicorn.dev/) |
 | Jinja2 | `>=3.1` | unpinned | 3.1.6 | unpinned | [Jinja docs](https://jinja.palletsprojects.com/en/stable/) |
 | python-multipart | `>=0.0.9` | unpinned | 0.0.32 | unpinned | [project docs](https://kludex.github.io/python-multipart/) |
-| Stripe | `>=10.0` | unpinned | 15.6.1 | unpinned | [Stripe API](https://docs.stripe.com/api) |
-| SQLAlchemy | `>=2.0` | unpinned | 2.1.1 | unpinned | [SQLAlchemy 2.1](https://docs.sqlalchemy.org/en/21/) |
+| Stripe | `>=10.0` | unpinned | 16.0.0 | unpinned | [Stripe API](https://docs.stripe.com/api) |
+| SQLAlchemy | `>=2.0` | unpinned | 2.1.4 | unpinned | [SQLAlchemy 2.1](https://docs.sqlalchemy.org/en/21/) |
 | APScheduler | `>=3.10` | unpinned | 3.11.3 | unpinned | [APScheduler 3.x](https://apscheduler.readthedocs.io/en/3.x/) |
-| python-dotenv | `>=1.0` | unpinned | 1.2.3 | unpinned | [python-dotenv](https://github.com/theskumar/python-dotenv) |
-| Pydantic | `>=2.7` | unpinned | 2.13.5 | unpinned | [Pydantic docs](https://docs.pydantic.dev/latest/) |
+| python-dotenv | `>=1.0` | unpinned | 1.2.4 | unpinned | [python-dotenv](https://github.com/theskumar/python-dotenv) |
+| Pydantic | `>=2.7` | unpinned | 2.14.1 | unpinned | [Pydantic docs](https://docs.pydantic.dev/latest/) |
 | HTTPX | `>=0.27` | unpinned | 0.28.1 | unpinned | [python-httpx.org](https://www.python-httpx.org/) |
 | google-generativeai | `>=0.7` | unpinned | 0.8.6, legacy | retired | [deprecated repo](https://github.com/google-gemini/deprecated-generative-ai-python) · migrate to [google-genai](https://googleapis.github.io/python-genai/) |
-| google-genai | commented (`# google-genai>=0.1`) | not installed | 2.25.0 | optional | [python-genai docs](https://googleapis.github.io/python-genai/) · [Gemini API](https://ai.google.dev/gemini-api/docs) |
-| google-cloud-aiplatform | commented | not installed | 2.2.0 | optional | [model lifecycle](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/model-versions) |
-| SQLite | stdlib `sqlite3` via `DATABASE_URL` | interpreter's libsqlite | 3.53.4 upstream | unpinned | [sqlite.org/docs](https://www.sqlite.org/docs.html) |
+| google-genai | commented (`# google-genai>=0.1`) | not installed | 2.29.0 | optional | [python-genai docs](https://googleapis.github.io/python-genai/) · [Gemini API](https://ai.google.dev/gemini-api/docs) |
+| google-cloud-aiplatform | commented | not installed | 2.4.0 | optional | [model lifecycle](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/model-versions) |
+| SQLite | stdlib `sqlite3` via `DATABASE_URL` | interpreter's libsqlite | 3.54.0 upstream | unpinned | [sqlite.org/docs](https://www.sqlite.org/docs.html) |
 | Tailwind CSS | Play CDN `https://cdn.tailwindcss.com` in `web/templates/base.html` | v3 browser build, no version | 4.3.3 | behind | [tailwindcss.com/docs](https://tailwindcss.com/docs) · [Play CDN](https://tailwindcss.com/docs/installation/play-cdn) |
 
 `cdn.tailwindcss.com` is the Tailwind v3 Play CDN. Current docs tell you to load `@tailwindcss/browser@4` from jsDelivr, and they say the Play CDN is for development, not production.
@@ -127,7 +127,7 @@ Floors only. `web/Dockerfile` does not install from that file's specifiers: the 
 | Vertex fallback | `from vertexai.generative_models import GenerativeModel` when `USE_VERTEX=true` | package not installed; platform docs now live under Gemini Enterprise Agent Platform | optional | [model versions](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/model-versions) |
 | OpenRouter chat | `POST https://openrouter.ai/api/v1/chat/completions`, default model `openrouter/free` | same endpoint; `openrouter/free` is the free router | match | [chat completions](https://openrouter.ai/docs/api/api-reference/chat/create-a-chat-completion) · [quickstart](https://openrouter.ai/docs/quickstart) · [free router](https://openrouter.ai/openrouter/free) |
 | OpenRouter Decisions (Jev) | `POST https://openrouter.ai/api/alpha/decisions`, default `typesafe/jev-1.13` | `typesafe/jev-1.13` is the current numbered release (listed 2026-09-18). `~typesafe/jev-latest` is the moving alias. The path is still under `/api/alpha/` | match | [Jev hub](https://openrouter.ai/docs/guides/community/jev) · [Decisions reference](https://openrouter.ai/docs/api/api-reference/alphadecisions/submit-a-decisions-request) · [System One](https://docs.typesafe.ai/concepts/system-one) |
-| Laya | optional `pip install laya` (comment in `requirements.txt`, not the image). Adapter: `web/system1/laya.py` → `laya.Router` | 0.3.20 | optional | [PyPI](https://pypi.org/project/laya/) · [weights](https://huggingface.co/convaiinnovations/laya) |
+| Laya | optional `pip install laya` (comment in `requirements.txt`, not the image). Adapter: `web/system1/laya.py` → `laya.Router` | 0.4.4 | optional | [PyPI](https://pypi.org/project/laya/) · [weights](https://huggingface.co/convaiinnovations/laya) |
 | Cloud Run | named deploy target (`CLOUD_RUN_SERVICE=ents-academy`). No service YAML in the repo | n/a | host | [Cloud Run docs](https://docs.cloud.google.com/run/docs) |
 
 `gemini-2.0-flash` retired on **2026-06-01**. The lifecycle table's recommended upgrade from that id is `gemini-3.1-flash-lite`. The newest generally available Flash model on the audit date is `gemini-3.8-flash`. Gemini 2.5 Pro, 2.5 Flash, and 2.5 Flash-Lite retire on 2026-10-20, so jumping only as far as 2.5 would be a short stay.
@@ -136,8 +136,8 @@ Floors only. `web/Dockerfile` does not install from that file's specifiers: the 
 
 | Piece | Ours | Latest stable | Drift | Official docs |
 | --- | --- | --- | --- | --- |
-| `@earendil-works/pi-coding-agent` | imported as `ExtensionAPI` in `ents-pi-mod/ents_mod.ts`. No version in the repo | 0.87.1 (2026-09-22) | host | [pi.dev/docs/latest](https://pi.dev/docs/latest) · [extensions](https://pi.dev/docs/latest/extensions) |
-| Node.js | required by Pi (docs: 22.19 or newer). Not pinned here | LTS 24.21.0 (Krypton). Current non-LTS 26.10.0 | host | [Node 24 API](https://nodejs.org/docs/latest-v24.x/api/) |
+| `@earendil-works/pi-coding-agent` | imported as `ExtensionAPI` in `ents-pi-mod/ents_mod.ts`. No version in the repo | 1.1.0 (2026-10-07) | host | [pi.dev/docs/latest](https://pi.dev/docs/latest) · [extensions](https://pi.dev/docs/latest/extensions) |
+| Node.js | required by Pi (docs: 22.19 or newer). Not pinned here | LTS 24.21.0 (Krypton). Current non-LTS 26.11.1 | host | [Node 24 API](https://nodejs.org/docs/latest-v24.x/api/) |
 | Bash | `#!/usr/bin/env bash` on graders, `scripts/test_oracle_honest.sh`, `max_env/scripts/sync.sh` | system bash | host | [Bash manual](https://www.gnu.org/software/bash/manual/) |
 | GNU Make | `web/Makefile` (`venv`, `install`, `smoke`, `run`) | system make | host | [Make manual](https://www.gnu.org/software/make/manual/) |
 
@@ -152,7 +152,7 @@ Exercises are `ex00` JAX, `ex01` MLX, `ex02` MAX, `ex03` Mojo. Graders call `pix
 - **MAX** builds a `max.graph.Graph` and runs it with `max.engine.InferenceSession.load`, then `model.execute`. Exercises import `max.driver`, `max.dtype.DType`, `max.graph.DeviceRef`, `TensorType`, and `ops` (`ops.gather`, `ops.constant`). Output comes back through `numpy.from_dlpack`. MAX 26.5 does not take student ONNX. Current MAX docs describe `InferenceSession.load` as the combined compile-and-init call, and they point new code at `compile()` then `init()`. Our exercises still call `load`.
 - **Mojo 1.0** kernels use `def` (not `fn`). C00 stores the embedding in `List[Float32]` after the Tensor API left the nightly this chapter was written against. C01 imports `std.math`. C02 imports `std.pathlib.Path`. Mojo 1.1 keeps the language at 1.x and still changes standard-library surface that is not marked stable, so re-grade C00–C02 before moving the pin.
 - **Flax** and **Optax** are in the env and unused by current exercises. **Rich** and **prompt_toolkit** are direct pins because Textual sits on them; first-party code imports Textual, not Rich.
-- **huggingface_hub** downloads weights: `max_env/scripts/download_gpt2.py` (`Xenova/gpt2` ONNX) and the C05 stub `run_gemma.py` (prints a `hf_hub_download` of `google/gemma-2b-it` and does not call it). `max_env/scripts/upload_to_hf.py` uses `HfApi`. The `<2` cap blocks Hub 2.0.0; check `hf_hub_download` before lifting it.
+- **huggingface_hub** downloads weights: `max_env/scripts/download_gpt2.py` (`Xenova/gpt2` ONNX) and the C05 stub `run_gemma.py` (prints a `hf_hub_download` of `google/gemma-2b-it` and does not call it). `max_env/scripts/upload_to_hf.py` uses `HfApi`. The `<2` cap blocks Hub 2.2.0; check `hf_hub_download` before lifting it.
 - **ONNX** is only `max_env/scripts/inspect_onnx.py`, plus the GPT-2 file that script expects. It is not an input to the Oracle.
 - **requests** is a direct pin with no first-party import.
 
@@ -208,16 +208,17 @@ Backends, all in `web/system1/backends.py`:
 
 ## Drift that should drive the next pin change
 
-1. **`gemini-2.0-flash` is retired** (2026-06-01). The default in `web/config.py` is not a live stable model. Latest GA Flash is `gemini-3.8-flash`. The client is the legacy `google-generativeai` package (0.8.6, critical fixes only). The installed successor is `google-genai` 2.25.0. `requirements.txt` already says this and leaves the new SDK commented out.
+1. **`gemini-2.0-flash` is retired** (2026-06-01). The default in `web/config.py` is not a live stable model. Latest GA Flash is `gemini-3.8-flash`. The client is the legacy `google-generativeai` package (0.8.6, critical fixes only). The installed successor is `google-genai` 2.29.0. `requirements.txt` already says this and leaves the new SDK commented out.
 2. **MAX 26.5.0 / Mojo 1.0.0 vs stable 26.6.0 / 1.1.0** (2026-09-17). The curriculum pin is exact (`==`). Moving it is a re-grade of C00–C02, not a lockfile-only edit. Watch `std.math`, `std.pathlib`, `List`, and `InferenceSession.load`.
-3. **Academy installs are not reproducible.** Floors in `web/requirements.txt` lag latest stable by design, and the Dockerfile ignores the floors. Python is 3.13.15 in Pixi and a floating 3.12 image for Cloud Run.
+3. **Academy installs are not reproducible.** Floors in `web/requirements.txt` lag latest stable by design, and the Dockerfile ignores the floors. Python is 3.13.15 in Pixi (latest 3.13 patch is 3.13.16) and a floating 3.12 image for Cloud Run (latest security patch on that line is 3.12.15).
 4. **Tailwind is the v3 Play CDN** against Tailwind 4.3.3. Fine for a demo page; it is not the production setup the current docs describe.
-5. **JAX 0.9.2 is capped below 0.10** while latest is 0.11.2. **huggingface_hub 1.27.0 is capped below 2** while latest is 2.0.0. Both caps are intentional until call sites are checked.
-6. **MLX 0.29.3 vs 0.32.2.** The constraint `>=0.22` allows the bump; the lock has not taken it. MLX remains Apple Silicon only.
-7. **Flax 0.12.8 vs 0.12.10**, and no exercise imports Flax. ONNX 1.22.0 vs 1.23.0, and the Oracle does not load ONNX. `download_gpt2.py` still fetches a GPT-2 ONNX file for a path MAX no longer consumes.
-8. **Laya 0.3.20 is optional and unpinned.** Demo and CI never install it. The image will not have it until the Dockerfile changes. The bus still selects it when `SYSTEM1_BACKEND` is unset and falls back to mock if `import laya` fails.
+5. **JAX 0.9.2 is capped below 0.10** while latest is 0.11.2. **huggingface_hub 1.27.0 is capped below 2** while latest is 2.2.0. Both caps are intentional until call sites are checked.
+6. **MLX 0.29.3 vs 0.32.3.** The constraint `>=0.22` allows the bump; the lock has not taken it. MLX remains Apple Silicon only.
+7. **Flax 0.12.8 vs 0.12.10**, and no exercise imports Flax. ONNX 1.22.0 vs 1.23.2, and the Oracle does not load ONNX. `download_gpt2.py` still fetches a GPT-2 ONNX file for a path MAX no longer consumes.
+8. **Laya 0.4.4 is optional and unpinned.** Demo and CI never install it. The image will not have it until the Dockerfile changes. The bus still selects it when `SYSTEM1_BACKEND` is unset and falls back to mock if `import laya` fails.
 9. **Jev `typesafe/jev-1.13` matches the current numbered model.** The Decisions endpoint is still alpha. `~typesafe/jev-latest` will move without a code change if you switch the default.
-10. **In sync:** requests 2.34.2, Textual 8.2.8, Rich 15.0.0, prompt_toolkit 3.0.53, Optax 0.2.8, Python 3.13.15 (latest 3.13 patch).
+10. **In sync:** requests 2.34.2, Textual 8.2.8, Rich 15.0.0, prompt_toolkit 3.0.53, Optax 0.2.8.
+11. **Python 3.13.15 is one patch behind 3.13.16** (2026-09-30). The `3.13.*` constraint allows that patch; the lock has not taken it. Drift on that row moved from line-current to behind. Overall stable is 3.15.0 (2026-10-09). MAX 26.6's PyPI metadata is `>=3.10,<3.15`, so 3.15 sits outside the range that package accepts.
 
 ## Not in this tree
 
